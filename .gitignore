@@ -47,3 +47,12 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+#Output Files
+figures/
+data/
+01_design/
+02_calibration/
+03_preliminaryanalyses/
+04_analyses/02_models/Output/*
+04_analyses/03_Bootstrap/output/*
