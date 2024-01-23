@@ -175,22 +175,24 @@ predC <- modpredC(Carbon, C.boot)
 
 # Create Plot
 
+soil.labs <- c("No Microbe | No Plant", "Yes Microbes | No Plant",
+               "No Microbes | Yes Plant", "Yes Microbes | Yes Plant")
+names(soil.labs) <- c("C", "N", "S", "L")
+
+
 Carbonplot <- ggplot() +
-  geom_pointrange(data = filter(predC, Level == "2"),
-                  mapping = aes(Soil, preds,
+  geom_pointrange(data = predC,
+                  mapping = aes(Level, preds,
                                 ymin = lwr, ymax = upr),
                   size = 1.2,
                   position = position_dodge(width = 0.2)) +
-  xlab("Soil Treatment") +
+  facet_wrap(~Soil, labeller = labeller(Soil = soil.labs)) + 
+  xlab("Soil Moisture Treatment") +
   ylab("Total Carbon (ppm)") +
-  theme_classic() +
-  theme(axis.title = element_text(size = 20)) +
-  theme(axis.text  = element_text(size = 18)) +
-  theme(legend.text = element_text(size = 18))
+  theme_classic(20) 
 
 Carbonplot
-ggsave(Carbonplot, filename = "figures/Carbon.jpeg",
-       height = 6, width =8, units = "in")
+ggsave(Carbonplot, filename = "figures/Carbon.png")
 
 ## Carbon Geno -----------------------------------------------------------------
 CpredG <- modpredG(CGeno, CGeno.boot)

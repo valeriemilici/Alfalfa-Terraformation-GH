@@ -80,7 +80,7 @@ contrasts(perf2$Geno) <- contr.sum(7)
 
 ## Soil levels ---------------------------
 dat1$Soil <- relevel(factor(dat1$Soil), 
-                     ref = "C")
+                     ref = "L")
 dat1$Geno <- relevel(factor(dat1$Geno),
                      ref = "MOC")
 #pH ------------------------------------------------------------------------
@@ -348,7 +348,7 @@ summary(Cbiomass)
 #body size does not predict pore-water carbon.
 # Inorganic Carbon (NPOC) ------------------------------------------------------
 dat1$Level <- as.factor(dat1$Level)
-contrasts(dat1$Level) <- contr.sum(3)
+contrasts(dat1$Level) <- contr.sdif(3)
 dat1$batch <- as.factor(dat1$batch)
 contrasts(dat1$batch) <- contr.sum(3)
 
@@ -357,13 +357,16 @@ contrasts(dat2$Level) <- contr.sum(3)
 dat2$batch <- as.factor(dat2$batch)
 contrasts(dat2$batch) <- contr.sum(3)
 
-IC <- lmer(NPOC ~ Soil * Level + scale(Dmass_tot) + batch +
+IC <- lmer(NPOC ~ Soil + Level + scale(Dmass_tot) + batch +
                  (1|Geno) + (1|block),
                data = dat1)
 
 check_model(IC)
+anova(IC)
 
 summary(IC) #nothing to see here...
+
+saveRDS(IC, file = "04_analyses/02_models/Output/ICSoil.RDS")
 
 ICGeno<- lmer(NPOC ~ Soil + Geno*Level + scale(Dmass_tot) + (1|block),
              data = dat2)

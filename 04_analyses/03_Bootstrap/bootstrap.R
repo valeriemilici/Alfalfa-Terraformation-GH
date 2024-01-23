@@ -33,6 +33,7 @@ Potassium <- readRDS("04_analyses/02_models/Output/KSoil.RDS")
 Magnesium <- readRDS("04_analyses/02_models/Output/MgSoil.RDS")
 Sodium <- readRDS("04_analyses/02_models/Output/NaSoil.RDS")
 Nitrate <- readRDS("04_analyses/02_models/Output/NO3Soil.RDS")
+IC <- readRDS("04_analyses/02_models/Output/ICSoil.RDS")
 #Geochemistry Geno
 ECGeno <- readRDS("04_analyses/02_models/Output/ECGeno.RDS")
 CGeno <- readRDS("04_analyses/02_models/Output/CGeno.RDS")
@@ -143,6 +144,15 @@ cation.fun <- function(.) {
   predict(., newdata = preddat, re.form = ~0)
 }
 
+#[12]
+IC.fun <- function(.) { #note this function isn't working for an unknown reason
+  preddat <- expand.grid(Soil = c("C", "N", "S", "L"),
+                         Level =c("1", "2", "3"),
+                         Dmass_tot = 106,
+                         batch = c("A", "B", "C"))
+  predict(., newdata = preddat, re.form = ~0)
+}
+
 ### Bootstrap the Model --------------------------------------------------------
 ##Performance -------------------------------------------
 #[1]
@@ -212,6 +222,10 @@ K.boot <- bootMer(Potassium, nsim = 1000, FUN = cation.fun,
 Na.boot <- bootMer(Sodium, nsim = 1000, FUN = cation.fun,
                    parallel="snow", ncpus = detectCores(), 
                    cl=cl)
+#[15B]
+IC.boot <- bootMer(IC, nsim = 1000, FUN = IC.fun,
+                  parallel="snow", ncpus = detectCores(), 
+                  cl=cl)
 
 ## Geochemistry Geno --------------------------------------
 #[16]
@@ -259,7 +273,7 @@ save(BST.boot, file = "04_Analyses/03_Bootstrap/output/BST.boot")
 save(PSN.boot, file = "04_Analyses/03_Bootstrap/output/PSN.boot")
 save(TPN.boot, file = "04_Analyses/03_Bootstrap/output/TPN.boot")
 save(Surv.boot, file = "04_Analyses/03_Bootstrap/output/Surv.boot")
-##Geochemistry Soil ---------------------------------------
+##Geochemistry Soil PW ---------------------------------------
 save(EC.boot, file = "04_Analyses/03_Bootstrap/output/EC.boot")
 save(pH.boot, file = "04_Analyses/03_Bootstrap/output/pH.boot")
 save(C.boot, file = "04_Analyses/03_Bootstrap/output/C.boot")
@@ -268,6 +282,7 @@ save(Mg.boot, file = "04_Analyses/03_Bootstrap/output/Mg.boot")
 save(NO3.boot, file = "04_Analyses/03_Bootstrap/output/NO3.boot")
 save(K.boot, file = "04_Analyses/03_Bootstrap/output/K.boot")
 save(Na.boot, file = "04_Analyses/03_Bootstrap/output/Na.boot")
+save(IC.boot, file = "04_analyses/03_Bootstrap/output/IC.boot")
 ##Geochemistry Geno --------------------------------------------
 save(ECGeno.boot, file = "04_Analyses/03_Bootstrap/output/ECGeno.boot")
 save(CGeno.boot, file = "04_Analyses/03_Bootstrap/output/CGeno.boot")
