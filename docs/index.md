@@ -1,3 +1,3 @@
-# Home Landing Page for Landscape Terraformation Project
+# About the Alfalfa Small-Pot Experiment
 
 Let's see what this looks like!
