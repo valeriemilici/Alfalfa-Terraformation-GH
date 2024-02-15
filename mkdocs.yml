@@ -51,6 +51,9 @@ icon:
 # Page tree
 nav:
 - Home: index.md
+- Data: data.md
+- Analysis: analysis.md
+- Data Management Plan: dmp.md
 
 # Extra Plugins
 plugins:
