@@ -29,13 +29,13 @@ alfdat2 <- cbind(Geno, alfdat)
 alfdat3<- alfdat2[,c(1,6,7,10,11)]
 
 #keep only the columns that we need
-datdis1 <- datdis %>% select(pot, et)
+datdis1 <- datdis %>% dplyr::select(pot, et)
 dat0 <- left_join(dat, datdis1, by = "pot")
 dat00 <- left_join(dat0, alfdat3, by = "Geno")
 dat1 <- dat00 %>% filter(CensusNo == 6,
                        !is.na(RGR_d), !is.na(meanTPN),
                        !is.na(massA), !is.na(et)) %>%
-  select(Height, LeafNo, massA, massB,rootsample, meanPSN, meanTPN,
+  dplyr::select(Height, LeafNo, massA, massB,rootsample, meanPSN, meanTPN,
          Soil, Geno, RGR_d, et, Days.Plant.to.Maturity,
          Determinate.Taproot.Percentage, Fibrous.Root.Mass, pot)
 
@@ -44,7 +44,7 @@ colSums(is.na(dat1))
 pot <- dat1$pot
 
 #make sure your data is only numbers
-dat2 <- dat1 %>% select(!c(Geno, rootsample, Soil, pot))
+dat2 <- dat1 %>% dplyr::select(!c(Geno, rootsample, Soil, pot))
 
 ### https://cran.r-project.org/web/packages/ggfortify/vignettes/plot_pca.html
 Geno <- data.frame(Geno)
@@ -167,7 +167,7 @@ chem2 <- chem2 %>% mutate(geno = case_when(Geno == "MOC" ~ "MOC",
 
 colSums(is.na(chem2)) #remove nitrite, phosphate, and lithium bc so many NAs
 #remove Carbon bc we don't have control data yet, and would remove all control
-chem3 <- chem2 %>% select(!c(Nitrite, Phosphate, Lithium, Carbon, Nitrate,
+chem3 <- chem2 %>% dplyr::select(!c(Nitrite, Phosphate, Lithium, Carbon, Nitrate,
                              Calcium)) %>%
   filter(!is.na(Fluorine), !is.na(Chlorine), !is.na(Sulfate),
          !is.na(pH), !is.na(EC), !is.na(Sodium), !is.na(Potassium),
@@ -202,12 +202,11 @@ porewater <- fviz_pca_ind(dis_pca,
                 col.ind = chem3$Geno, palette = "jco", 
                 addEllipses = T, ellipse.level = 0.9, label = "none", repel = TRUE,
                 legend.title = "Geno") +
-  theme_classic()
+  theme_classic(12)
 
 porewater
 
-ggsave(plot = porewater, filename = "figures/porewaterPCA.jpeg",
-       height = 2, width =2.67, units = "in")
+ggsave(plot = porewater, filename = "figures/porewaterPCA.png")
 #[5] Extract the data that you need --------
 
 ind3 <- get_pca_ind(dis_pca)
@@ -277,3 +276,5 @@ ind4 <- get_pca_ind(all_pca)
 all_coords <- cbind(data.frame(ind4$coord[,1:2]), dat7$pot)
 write.csv(all_coords, "data/allcoords.csv")
 #this one might have too little information (only 43 pots had all info)
+
+###

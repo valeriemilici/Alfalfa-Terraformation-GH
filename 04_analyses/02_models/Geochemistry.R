@@ -81,8 +81,8 @@ contrasts(perf2$Geno) <- contr.sum(7)
 ## Soil levels ---------------------------
 dat1$Soil <- relevel(factor(dat1$Soil), 
                      ref = "L")
-dat1$Geno <- relevel(factor(dat1$Geno),
-                     ref = "MOC")
+dat2$Geno <- relevel(factor(dat2$Geno),
+                     ref = "VIR")
 #pH ------------------------------------------------------------------------
 pHSoil <- lmer(pH ~ Soil * Level + scale(Dmass_tot) + (1|Geno) + (1|block),
                 data = dat1)

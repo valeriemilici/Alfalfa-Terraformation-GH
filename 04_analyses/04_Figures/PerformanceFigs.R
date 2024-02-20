@@ -48,58 +48,42 @@ BRplot1 <- ggplot() +
   geom_pointrange(data = filter(predBR, Level == "1"),
                   mapping = aes(Geno, exp(preds),
                                 ymin = exp(lwr), ymax = exp(upr)),
-                  size = 1.2,
                   position = position_dodge(width = 0.2)) +
   geom_hline(yintercept = exp(fixef(BR)[1] + fixef(BR)[2]*log(0.067)), col = "red") +
   xlab("") +
-  ylab("Above:Belowground Biomass Allocation") +
+  ylab("Root:Shoot Mass (g)") +
   ylim(0,1) +
-  theme_classic() +
-  theme(axis.title = element_text(size = 22)) +
-  theme(axis.text  = element_text(size = 14)) +
-  theme(legend.text = element_text(size = 14))
+  theme_classic(12) 
 
-#BRplot1
+BRplot1
 
 BRplot2 <- ggplot() +
   geom_pointrange(data = filter(predBR, Level == "2"),
                   mapping = aes(Geno, exp(preds),
                                 ymin = exp(lwr), ymax = exp(upr)),
-                  size = 1.2,
                   position = position_dodge(width = 0.2)) +
   geom_hline(yintercept = exp(fixef(BR)[1] + fixef(BR)[4]+
                                 fixef(BR)[2]*log(0.067)), col = "red") +
-  xlab("") +
-  ylab("") +
+  xlab("Genotypes") +
+  ylab("Root:Shoot Mass (g)") +
   ylim(0,1) +
-  theme_classic() +
-  theme(axis.title = element_text(size = 16),
-        axis.text  = element_text(size = 14),
-        legend.text = element_text(size = 14),
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank())
+  theme_classic(12) 
 
-#BRplot2
+BRplot2
 
 BRplot3 <- ggplot() +
   geom_pointrange(data = filter(predBR, Level == "3"),
                   mapping = aes(Geno, exp(preds),
                                 ymin = exp(lwr), ymax = exp(upr)),
-                  size = 1.2,
                   position = position_dodge(width = 0.2)) +
   geom_hline(yintercept = exp(fixef(BR)[1] +fixef(BR)[5]+
                                 fixef(BR)[2]*log(0.067)), col = "red") +
   xlab("") +
   ylab("") +
   ylim(0,1) +
-  theme_classic() +
-  theme(axis.title = element_text(size = 16),
-        axis.text  = element_text(size = 14),
-        legend.text = element_text(size = 14),
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank())
+  theme_classic(12)
 
-#BRplot3
+BRplot3
 
 BR.Moisture <- BRplot1 +
   BRplot2 + 
@@ -110,8 +94,7 @@ BR.Moisture <- BRplot1 +
 
 BR.Moisture
 
-ggsave(BR.Moisture, filename = "figures/BR.Moisture.jpeg",
-       height = 8, width =15, units = "in")
+ggsave(BRplot2, filename = "figures/BR.Moisture2.png")
 ### Genotype Specific Total Biomass --------------------------------------------
 
 # Predict new data & add CIs. Creates data for plotting.
@@ -194,20 +177,15 @@ TPNplot <- ggplot() +
   geom_pointrange(data = filter(predTPN, Soil == "L"),
                   mapping = aes(Geno, preds,
                                 ymin = lwr, ymax = upr),
-                  size = 1.2,
                   position = position_dodge(width = 0.2)) +
   geom_hline(yintercept = fixef(TPN)[1], col = "red") +
-  xlab("Alfalfa Genotypes") +
-  ylab("Transpiration \n(Scott, what are the units?)") +
-  theme_classic() +
-  theme(axis.title = element_text(size = 16)) +
-  theme(axis.text  = element_text(size = 14)) +
-  theme(legend.text = element_text(size = 14))
+  xlab("Genotypes") +
+  ylab("Transpiration \n (mmol/m^2/s)") +
+  theme_classic(12) 
 
 TPNplot
 
-ggsave(TPNplot, filename = "figures/TPN.jpeg",
-       height = 8, width =10, units = "in")
+ggsave(TPNplot, filename = "figures/TPN.png")
 
 ### Genotype Specific Survival -------------------------------------------------
 

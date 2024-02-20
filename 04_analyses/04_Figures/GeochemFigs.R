@@ -131,19 +131,14 @@ ECGplot <- ggplot() +
   geom_pointrange(data = ECpredG2,
                   mapping = aes(Geno, exp(preds)/1000,
                                 ymin = exp(lwr)/1000, ymax = exp(upr)/1000),
-                  size = 0.9,
                   position = position_dodge(width = 0.2)) +
   geom_hline(yintercept = exp(fixef(ECGeno)[1])/1000, col = "red") +
-  xlab("Alfalfa Cultivar") +
+  xlab("Genotypes") +
   ylab("Electrical Conductivity (mS/m)") +
-  theme_classic() +
-  theme(axis.title = element_text(size = 12)) +
-  theme(axis.text  = element_text(size = 10)) +
-  theme(legend.text = element_text(size = 10))
+  theme_classic(12)
 
 ECGplot
-ggsave(ECGplot, filename = "figures/ECGeno.jpeg",
-       height = 2, width =2.67, units = "in")
+ggsave(ECGplot, filename = "figures/ECGeno.png")
 
 ## pH Soil ---------------------------------------------------------------------
 
