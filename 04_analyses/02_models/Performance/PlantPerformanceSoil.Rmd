@@ -1,0 +1,429 @@
+---
+title: "The Alfalfa Small-Pot Experiments: Plant Performance Models"
+author: "Valerie Milici"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+rm(list =ls())
+
+library(tidyverse) #clean data manipulation
+library(lme4) #mixed effects models
+library(lmerTest) #p-values from linear mixed models
+library(MASS) #for contr.sdif
+library(broom.mixed) #model diagnostics
+library(performance) #model diagnostics
+library(rmarkdown) #to render the document
+library(knitr) # for pretty markdown tables
+
+dat <- read.csv("data/ModData/AllPerformanceGeochem.csv") 
+census <- read.csv("data/ModData/FullCensusTimeSeries.csv")
+
+#Remove NAs and simplify data to one observation per plant
+BMdat <- dat %>%
+  #We only want to analyze Live/Sterile treatments
+  filter(!is.na(Geno) &
+           Soil != "P") %>%
+  #Only living plants have data
+  filter(status == 1)
+```
+
+<a id="toc"></a>
+
+# Table of Contents
+
+ [Introduction](#item-one)
+ 
+ [Biomass](#item-two)
+ 
+ [Growth Rate](#item-three)
+ 
+ [Survival](#item-four)
+ 
+ [Photosynthesis and Transpiration](#item-five)
+ 
+ [Evapotranspiration](#item-six)
+ 
+ [Plant Performance Summary](#item-seven)
+
+<a id="item-one"></a>
+
+# Introduction
+
+Below are the models and results of plant performance data from the July - October 2022 GCR Task 2A experiment. These models explore broad trends in how the microbes that have naturally colonized the Landscape Evolutionary Observatory (LEO) at Biosphere 2 affect alfalfa growth, and how these trends respond to variation in soil moisture.
+
+*These models will help us to evaluate the following questions:*
+
+1. How do the microbes native to the LEO hillslopes affect plant performance, 
+
+2. and how does abiotic variation (soil moisture) affect these relationships?  
+
+
+*Note*: Models exploring genotype-specific trends can be found in the "Plant Performance Models: Genotype-Specific" document.
+
+## Set the Model Contrasts
+
+First, I will define how the model interprets soil moisture ("Level"). I am using standard difference contrasts so that the intercept can be interpreted as the "average soil moisture effect"- just like in the case of a sum-to-zero contrast- & the model output will tell us how increased soil moisture affects patterns in microbial effects on plant performance (i.e., level 2 vs level 1 & level 3 vs level 2).
+
+```{r Set Model Contrasts}
+BMdat$Level <- as.factor(BMdat$Level)
+contrasts(BMdat$Level) <- contr.sdif(3)
+
+census$Level <- as.factor(census$Level)
+contrasts(census$Level) <- contr.sdif(3)
+```
+
+
+
+<a id="item-two"></a>
+
+# Biomass Models
+
+Jump to [summary](#summary-one)
+
+## Total Biomass
+
+```{r Total Biomass, message = F}
+BMSoil <- lmer(log(totBM) ~ Soil * Level + (1|Geno) + (1|table), 
+                data = BMdat)
+```
+
+*Check the model diagnostics*
+
+```{r BM diagnostics, echo = F, fig.dim= c(6,8)}
+check_model(BMSoil)
+```
+
+The model looks good to me. Now time to review the model summary.
+
+```{r BM Summary, echo = F}
+BMSoil %>% tidy() %>% kable()
+```
+
+We can see that plants in the sterile soil treatment had greater biomass than plants in the live soil treatment. We also see that moisture affects biomass. Regardless of soil microbe exposure, plants had greater biomass when comparing moisture treatments 1 (30-50% WHC) and 2 (55-75% WHC), but additional soil moisture did not further affect plant growth (levels 2 vs 3; 80-100% WHC).
+
+```{r BM Save, echo=FALSE}
+
+saveRDS(BMSoil, file = "04_analyses/02_models/Output/Biomass.RDS")
+
+```
+
+
+## Aboveground Biomass
+
+```{r Aboveground Biomass, message = F}
+BMSoilA <- lmer(log(massA) ~ Soil * Level + (1|Geno) + (1|table), 
+                data = BMdat)
+```
+
+*Check the model diagnostics*
+
+```{r BMA diagnostics, echo = F, fig.dim= c(6,8)}
+check_model(BMSoilA)
+```
+
+The model looks good to me. Now time to review the model summary.
+
+```{r BMA Summary, echo = F}
+BMSoilA %>% tidy() %>% kable()
+```
+
+The same pattern as total biomass. We can see that plants in the sterile soil treatment had greater aboveground biomass than plants in the live soil treatment. We also see that moisture affects aboveground biomass. Regardless of soil microbe exposure, plants had greater aboveground biomass when comparing moisture treatments 1 (30-50% WHC) and 2 (55-75% WHC), but additional soil moisture did not further affect plant growth (levels 2 vs 3; 80-100% WHC).
+
+## Belowground Biomass
+
+```{r Belowground Biomass, message = F}
+BMSoilB <- lmer(log(massB) ~ Soil * Level + (1|Geno) + (1|table), 
+                data = filter(BMdat, rootsample == "Y"))
+```
+
+*Check the model diagnostics*
+
+```{r BMB diagnostics, echo = F, fig.dim= c(6,8)}
+check_model(BMSoilB)
+```
+
+The model looks good to me. Now time to review the model summary.
+
+```{r BMB Summary, echo = F}
+BMSoilB %>% tidy() %>% kable()
+```
+
+We see the exact same pattern in belowground biomass as we saw in aboveground biomass. Plants in sterile soil had larger roots than for plants exposed to microbes. We see improvements in biomass between low and intermediate soil moisture, but that further increases to high soil moisture do not provide additional improvements to plant growth. There is no interaction between soil inoculation and growth response to soil moisture, so both live and sterile plants have the same growth relationship to soil moisture. 
+
+## Biomass Allocation
+
+```{r Biomass Allocation, message = F}
+BMSoilR <- lmer(log(massA/massB) ~ log(totBM) + Soil * Level + (1|Geno) + (1|table), 
+                data = filter(BMdat, rootsample == "Y"))
+```
+
+*Check the model diagnostics*
+
+Note: I can't use my typical function to check this model because it can't handle the model response. I need to look into this a bit more to include diagnostics. Considering the previous models have all been ok, I'm going to assume the model is ok for now. 
+
+
+```{r BMR Summary, echo = F}
+BMSoilR %>% tidy() %>% kable()
+```
+
+As is typical (especially for alfalfa), a larger proportion of total biomass is allocated to belowground biomass than aboveground biomass. Overall, as plants become larger (total biomass increases), there is increased root allocation compared to shoot allocation. Plants in sterile soil once again differ from plants in live soil; they have greater belowground biomass allocation than do live soil plants. So, microbes affect biomass allocation patterns. Soil moisture does not affect allocation patterns in either live or sterile soil plants. 
+
+```{r BM ratio Save, echo=FALSE}
+
+saveRDS(BMSoilR, file = "04_analyses/02_models/Output/BiomassRatio.RDS")
+
+```
+
+<a id="summary-one"></a>
+
+## Summary of Patterns in Biomass
+
+We can see that microbes and soil moisture influenced plant growth. In general, the soil microbes that have colonized the LEO hillslope appear to inhibit alfalfa growth, and reduce root allocation (or root prevalence as the live soil plants could have been trying to increase their roots, but the microbes may be consuming the root tissue). Soil moisture only affects plant growth between the low and intermediate moisture treatments, indicating that water is limiting in the low treatment. But, plant growth is equal between the intermediate and high treatments, indicating that plants are no longer water limited in either treatment. There is no interaction between soil moisture and the effects of microbes on plant growth, so the microbes are not responding to variation in soil moisture- only the plants. 
+
+[contents](#toc)
+
+<a id="item-three"></a>
+
+# Relative Growth Rates
+
+Jump to [summary](#summary-two)
+
+*note*: RGR is a very messy metric for this experiment in my opinion. To calculate RGR you need to measure plant height change throughout the experiment. The alfalfa had very challenging growth patterns. Some plants did actually grow their stems, giving height change a reliable measure, but others did not grow their stems and instead had very long petioles (leaf stems), so we had to measure petiole otherwise a plant would have a height of 0.1 mm for the duration of the experiment. I do not think the RGR results can be used in a publication, so these are presented for internal reporting only. 
+
+## RGR at the beginning of the experiment
+```{r RGR early, message = F}
+RGR1 <- lmer(RGR_d ~ Soil*Level +
+                  HtPrevCensus +
+                  (1|Geno) + (1|table),
+                data = filter(census, CensusNo == 2 & status == 1))
+```
+
+*check the model diagnostics*
+```{r Early RGR diagnostics, echo = F, fig.dim= c(6,8)}
+check_model(RGR1)
+```
+
+```{r RGR1 Summary, echo = F}
+RGR1 %>% tidy() %>% kable()
+```
+
+Plants in sterile soil grow faster than plants in live soil. There is a slight interaction between microbes and soil moisture here: In the earliest days of the experiment, plants in live soil grew faster as soil moisture increases, but this is not true for plants in sterile soil.  
+
+But we also know that this pattern doesn't hold across the entire experiment...
+
+## RGR across the entire experiment
+
+```{r RGR entire, message = F}
+RGR2 <- lmer(RGR_d ~ Soil + Level +
+                  HtPrevCensus +
+                  (1|Geno) + (1|table) + (1|pot) + (1|CensusNo),
+                data = filter(census, CensusNo != 1 & status == 1))
+```
+
+*check the model diagnostics*
+```{r Entire RGR diagnostics, echo = F, fig.dim= c(6,8)}
+check_model(RGR2)
+```
+
+```{r RGR2 Summary, echo = F}
+RGR2 %>% tidy() %>% kable()
+```
+
+Plants in sterile soil grew faster than plants in live soil throughout the experiment. Plants grew faster with increasing soil moisture. Prior model iterations showed that an interaction between microbes and soil moisture did not improve the model, so an additive model only provides the best fit for the data.
+
+```{r RGR Save, echo=FALSE}
+
+saveRDS(RGR2, file = "04_analyses/02_models/Output/RGR.RDS")
+
+```
+
+<a id="summary-two"></a>
+
+## Summary of RGR Effects
+
+The LEO soil microbes inhibit plant growth rates. At the very beginning of the experiment, there was an interaction between soil microbes and water availability such that at increased soil moisture growth rates were indistinguishable between plants in live and sterile soil. This suggests that plants in sterile soil were able to maximize their growth rates even in the low soil moisture treatment, but the interaction between plants and microbes caused growth rates to be water-limited. However, this interaction between soil moisture and soil microbes quickly fades, and when we consider growth rates across the entire experiment, LEO microbes inhibit plant growth rates in all water treatments. This suggests that over time, increased water resources aren't enough for plants to overcome the antagonistic relationship with soil microbes. 
+
+[contents](#toc)
+
+<a id="item-four"></a>
+
+# Survival
+
+Jump to [summary](#summary-three)
+
+## Survival across time
+```{r Survival Model Data Prep, echo = F}
+census1 <- census %>% 
+  mutate(Status = ifelse(status == 1, 0, 1)) #p.mort with cloglog
+
+census2 <- census  %>% group_by(pot) %>% 
+  arrange(CensusNo) %>%
+  filter(row_number() == n()) %>%
+  ungroup()
+#thinned data set that contains only the final observation for each plant. 
+#if censusno < 5, then the plant died before the end of the experiment.
+
+census2$status <- ifelse(census2$CensusNo < 6, 0, census2$status)
+```
+
+
+*note*: I'm using a "cloglog" link to account for census interval in the model, due to the math underlying a cloglog link, I need to model mortality rather than survival, so all of the outputs from the model will be interpreted as probability of mortality. In a hidden block of code I've created a new "status" column where 0 = alive and 1 = dead. 
+
+```{r Mortality Entire, message = F}
+Mort1 <- glmer(Status ~ Soil * Level  + scale(HtPrevCensus) +
+                  (1|pot)+ (1|CensusNo) + (1|Geno) + (1|table),
+                 data = filter(census1, CensusNo != 1 & HtPrevCensus > 0),
+                 family = binomial(link = "cloglog"),
+                 glmerControl(optimizer = "bobyqa",
+                              optCtrl = list(maxfun = 10000)),
+                 offset = scale(log(censusint)))
+```
+
+**To Do:** Model diagnostics... check old code from prior studies.
+
+```{r Mort1 Summary, echo = F}
+Mort1 %>% tidy() %>% kable()
+```
+
+Throughout the duration of the experiment soil microbes increased a plant's probability of mortality. Increasing soil moisture reduced the probability of mortality, and this was especially true for plants in sterile soil (although the effect is marginal, *p* = 0.08). 
+
+```{r Mort Save, echo=FALSE}
+
+saveRDS(Mort1, file = "04_analyses/02_models/Output/Mortality.RDS")
+
+```
+
+## Survival to the end of the experiment
+
+Because now we are only looking at one observation for survival (whether or not the plant was alive at the end of the experiment) we are modeling survival, not mortality. 
+
+```{r Surv model, message= F}
+Surv <- glmer(status ~ Soil + Level + (1|Geno) + (1|table),
+                 data = census2,
+                 family = binomial(),
+                 glmerControl(optimizer = "bobyqa",
+                              optCtrl = list(maxfun = 10000)))
+```
+
+*note:* there is no interaction between soil and level, so the best model is additive only. 
+
+```{r Surv Summary, echo = F}
+Surv %>% tidy() %>% kable()
+```
+
+Plants in sterile soil are more likely to survive to the end of the experiment than plants in live soil (77% vs 34%). Survival increases between low and intermediate soil moisture, but does not change between intermediate and high soil moisture, so plants are only water limited in a way that impacts survival at the lowest soil moisture.  
+
+<a id="summary-three"></a>
+
+## Summary of Survival Models
+
+When considering survival both across time and the end of the experiment, we see that soil microbes reduced plant survival. This is unsurprising given the fact that soil microbes also reduced growth rate and biomass, and small plants are much more likely to die than large plants. In general we see that plants are more likely to survive when soil moisture is at least 55% of total water holding capacity. 
+
+Interestingly, there is a marginal relationship between microbe and moisture effects on survival rates over time. This suggests that all plants were water stressed in the low moisture treatment, and that plants exposed to soil microbes had a dual stress of water and microbes that could not be overcome by increased water availability. If we go back to the root allocation result, this could be because microbes result in decreased root allocation, so plants are less able to seek water or nutrients via root expansion. Thus, plants in live soil may be less likely to be advantaged by increased soil moisture than plants in sterile soil because of their tiny roots.
+
+[contents](#toc)
+
+<a id="item-five"></a>
+
+## Photosynthesis and Transpiration
+
+Jump to [summary](#summary-four)
+
+### Photosynthesis
+
+```{r PSN Mod, message=FALSE}
+PSN <- lmer(log1p(std_PSN) ~ Soil + Level + (1|Geno) + (1|table),
+                data = BMdat)
+```
+
+*check the model diagnostis*
+
+```{r PSN diagnostics, echo = F, fig.dim= c(6,8)}
+check_model(PSN)
+```
+```{r PSN summary, echo = F}
+PSN %>% tidy() %>% kable()
+```
+
+*caveat* Although we see significant patterns in the model, the effect sizes are very small given the range of the data (0 - 0.15, mean = 0.015). I'm willing to think that these patterns aren't ecologically meaningful. 
+
+Soil microbes reduced photosynthetic rates. We see a hump-shaped pattern with soil moisture and photosynthesis. Photosynthesis is highest at intermediate soil moisture and similar at low and high soil moisture. 
+
+### Transpiration
+
+```{r TPN Mod, message=FALSE}
+TPN <- lmer(log1p(std_TPN) ~ Soil + Level + (1|Geno) + (1|table),
+                data = BMdat)
+```
+
+*check the model diagnostis*
+
+```{r TPN diagnostics, echo = F, fig.dim= c(6,8)}
+check_model(TPN)
+```
+
+
+```{r TPN summary, echo = F}
+TPN %>% tidy() %>% kable()
+```
+
+Nothing really going on here. The only pattern with transpiration (marginal, and again the effect size is so slight that I don't think it's biologically meaningful) is that transpiration is a bit lower at high soil moisture compared to the other treatments. 
+
+<a id="summary-four"></a>
+
+### Summary of Photosynthesis and Transpiration
+
+Not much is happening in these models. There are only patterns in photosynthesis and the effect size is so slight that I think it's biologically meaningless. 
+
+[contents](#toc)
+
+<a id="item-six"></a>
+
+## Evapotranspiration
+
+Evapotranspiration is the only "hydrology"-type metric that we can get from this experiment. Our measure of evapotranspiration (ET) comes from the discharge experiment that we performed prior to the harvest of the experiment. 
+
+```{r ET mod data prep, echo = F}
+dat1 <- dat %>% filter(ET <= 25,
+                       ET >= 5 &
+                         Soil != "P")
+```
+
+
+```{r ET mod, message = F}
+ET <- lmer(log(ET) ~ soil_LSB + Level + factor(batch_discharge)
+              + (1|dis_table),
+              data = dat1)
+```
+
+*check the model diagnostics*
+
+```{r ET diagnostics, echo = F, fig.dim= c(6,8) }
+check_model(ET)
+```
+
+
+```{r ET summary, echo = F}
+ET %>% tidy() %>% kable()
+```
+
+Summary: There are no patterns with ET. There was no difference between planted and bare treatments and ET. This isn't surprising given that the plants were so small. 
+
+[contents](#toc)
+
+<a id="item-seven"></a>
+
+## Summary of Performance Results
+
+Overall, these models tell a consistent story. My preference is to select the total biomass, biomass allocation, survival rate, and RGR entire models for the manuscript figures.
+
+Together they tell us that across the board, soil microbes inhibited plant growth rates, and as a result plants in live soil were smaller and more likely to die than plants in sterile soil. 
+
+The soil microbes either influenced biomass allocation or were attacking/consuming the plant roots, because plants in the live soil had decreased root allocation compared to plants in sterile soil. Fewer roots would have compromized the plant's ability to obtain water and (the very limited) nutrients from the soil. Also, if the microbes were consuming the root tissue, then the plants would have been losing a lot of energy and would be smaller and more likely to die- all contributing to the patterns that we see here. Of course, the microbes may also have been competing with the plants for the very limited nutrients, and we do have some evidence for this. See the geochemistry analysis for that information!
+
+[contents](#toc)

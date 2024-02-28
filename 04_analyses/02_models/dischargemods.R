@@ -32,8 +32,9 @@ ggsave(dis_summary, file = "figures/dis_summary.jpeg")
 # models -----------------------------------------------------------------------
 
 #remove outliers
-dat1 <- dat %>% filter(et <= 25,
-                       et >= 5)
+dat1 <- dat %>% filter(ET <= 25,
+                       ET >= 5 &
+                         Soil != "P")
 
 #model fit isn't quite right. Consider other distributions. So far you've 
 #tried lognormal and gamma and normal. The problem seems to be that the model

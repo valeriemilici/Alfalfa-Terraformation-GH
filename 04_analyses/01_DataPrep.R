@@ -71,7 +71,7 @@ census1 <- census %>%
          #compute RGR (mm/mm/day)
          RGR_d = RGRf(HtPrevCensus, Height.mm, censusint)) %>%
   ungroup() %>%
-  select(1,2,3,13:15,17,6,11,5,12,18:20,7,8,16) 
+  dplyr::select(1,2,3,13:15,17,6,11,5,12,18:20,7,8,16) 
 #Looks good!
 
 # 2. Merge together all final measurements -------------------------------------
@@ -86,7 +86,7 @@ dat <- census %>%
          status = ifelse(Status == "D", 0,1)) %>%
   #only need final census data
   filter(CensusNo == 6) %>%
-  select(3,17,5,12,11,6:8,13:16)
+  dplyr::select(3,17,5,12,11,6:8,13:16)
 
 #discharge data can only tell us ET (following discussion with Hannes B.)
 dis1 <- discharge %>%
@@ -103,7 +103,7 @@ dis1 <- discharge %>%
                            dis_table == 3 ~ 1,
                            dis_table == 4 ~ 1,
                            TRUE ~ 2)) %>%
-  select(pot,ET,Dmass_tot, soil_LSB, plant_YN, batch_discharge)
+  dplyr::select(pot,ET,Dmass_tot, soil_LSB, plant_YN, batch_discharge, dis_table)
 
 #start with LiCor data because this may have the most measurements
 dat1 <- merge(dat, licor, by = "pot", all = T)
@@ -112,6 +112,13 @@ dat3 <- merge(dat2, pw_geo, by = "pot", all.x = T)
 dat4 <- merge(dat3, dis1, by = "pot", all.x = T)
 dat5 <- merge(dat4, s_geo, by = "pot", all.x = T)
 
+dat6 <- dat5 %>%
+  #removes random "X" and "notes" columns
+  dplyr::select(1:12, 14:21, 24:51, 53:59) %>%
+  #calculate final biomass columns
+  mutate(totBM = massA + massB,
+         BMrat = massB/massA) 
+
 #Export the finished dataframes ------------------------------------------------
-write.csv(census1, file = "data/ModData/FullCensusTimeSeries.csv")
-write.csv(dat5, file = "data/ModData/AllPerformanceGeochem.csv")
+write.csv(census1, file = "data/ModData/FullCensusTimeSeries.csv",row.names = F)
+write.csv(dat6, file = "data/ModData/AllPerformanceGeochem.csv", row.names = F)

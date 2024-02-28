@@ -1,0 +1,453 @@
+---
+title: "Genotype-Specific Plant Performance"
+author: "Valerie Milici"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+rm(list =ls())
+
+library(tidyverse) #clean data manipulation
+library(lme4) #mixed effects models
+library(lmerTest) #p-values from linear mixed models
+library(MASS) #for contr.sdif
+library(broom.mixed) #model diagnostics
+library(performance) #model diagnostics
+library(rmarkdown) #to render the document
+library(knitr) # for pretty markdown tables
+
+dat <- read.csv("data/ModData/AllPerformanceGeochem.csv") 
+census <- read.csv("data/ModData/FullCensusTimeSeries.csv")
+
+outs <- c("515", "639", "A20", "D16", "R24", "SWE", "212", "105", "G74")
+#genotypes that have not survived well
+
+#Remove NAs and simplify data to one observation per plant
+dat1 <- dat %>%
+  #We only want to analyze Live/Sterile treatments
+  filter(!is.na(Geno) &
+           Soil != "P") %>%
+  #Only living plants have data
+  filter(status == 1) %>%
+  filter(!Geno %in% outs)
+
+census1 <- census %>% filter(!Geno %in% outs)
+```
+
+<a id="toc"></a>
+
+# Table of Contents
+
+ [Introduction](#item-one)
+ 
+ [Biomass](#item-two)
+ 
+ [Growth Rate](#item-three)
+ 
+ [Survival](#item-four)
+ 
+ [Photosynthesis and Transpiration](#item-five)
+ 
+ [Genotype Specific Summary](#item-six)
+
+<a id="item-one"></a>
+
+# Introduction
+
+Below are the models and results of genotype-specific plant performance data from the July - October 2022 GCR Task 2A experiment. These models explore genotype-specific trends in how the microbes that have naturally colonized the Landscape Evolutionary Observatory (LEO) at Biosphere 2 affect alfalfa growth, and how these trends respond to variation in soil moisture. The data have been thinned so that they only consider the genotypes that had the best survival and are the candidates for sowing onto LEO. 
+
+*These models will help us to evaluate the following questions:*
+
+1. How does intra-specific variation affect the relationships between plants and LEO soil microbes, and 
+
+2. how does abiotic variation (soil moisture) affect these relationships?  
+
+## Set the Model Contrasts
+
+First, I will define how the model interprets soil moisture ("Level"). I am using standard difference contrasts so that the intercept can be interpreted as the "average soil moisture effect"- just like in the case of a sum-to-zero contrast- & the model output will tell us how increased soil moisture affects patterns in microbial effects on plant performance (i.e., level 2 vs level 1 & level 3 vs level 2).
+
+I'm also changing genotype to a sum-to-zero contrast. That way the model intercept (and non-geno fixed effects) can be interpreted as the average genotypic response and the significant genotype effects will be interpreted as a genotype that deviates from the average. The genotypes will be numbered in the output; the key is as follows:
+
+Geno1 = CRI
+
+Geno2 = G15
+
+Geno3 = INA
+
+Geno4 = MOC
+
+Geno5 = TAS
+
+Geno6 = VIR
+
+Geno7 = YON
+
+Geno8 = K19 (embedded within intercept)
+
+```{r Set Model Contrasts, results='hide'}
+
+# Data for models of single performance metrics (biomass, photosynthesis, etc.)
+dat1$Level <- as.factor(dat1$Level)
+contrasts(dat1$Level) <- contr.sdif(3)
+
+dat1$Geno <- factor(dat1$Geno,
+       levels = c("CRI","G15","INA","MOC","TAS","VIR","YON", "K19"))
+
+dat1$Geno <- as.factor(dat1$Geno)
+contrasts(dat1$Geno) <- contr.sum(8)
+
+dat1$Soil <- relevel(factor(dat1$Soil), ref = "S")
+
+# Data for "over time" analyses (RGR and Survival)
+census1$Level <- as.factor(census1$Level)
+contrasts(census1$Level) <- contr.sdif(3)
+
+census1$Geno <- factor(census1$Geno,
+                       levels = c("CRI","G15","INA","MOC","TAS","VIR","YON", "K19"))
+census1$Geno <- as.factor(census1$Geno)
+contrasts(census1$Geno) <- contr.sum(8)
+
+census1$Soil <- relevel(factor(census1$Soil), ref = "S")
+
+
+```
+
+
+<a id="item-two"></a>
+
+# Biomass Models
+
+Jump to [summary](#summary-one)
+
+## Total Biomass
+
+```{r GS Total Biomass, message = F}
+BMGeno <- lmer(log(totBM) ~ Geno * Soil + Level + (1|table), 
+                data = dat1)
+```
+
+*Check the model diagnostics*
+
+```{r GS BM diagnostics, echo = F, message=F, fig.dim= c(6,8)}
+check_model(BMGeno)
+```
+
+The model looks good to me. Because I've included interaction terms the VIFs for Geno and Geno:Soil are high, but that doesn't indicate an actual issue with multicollinearity in the data. Now time to review the model summary.
+
+```{r GS BM Summary, echo = F}
+BMGeno %>% tidy() %>% kable()
+```
+First, we see similar trends to the overall performance models. Microbes reduce plant biomass, and plants grew bigger between the low and medium soil moisture treatments, with no difference in biomass between the medium and high soil moisture treatments. 
+
+There is variation among the genotypes. Both TAS (5) and YON (7) are slightly larger than average. 
+
+Some genotypes show variation in how they interact with soil microbes. CRI (1) and MOC (4) were less negatively affected by soil microbes than the average genotype, while TAS (5) and YON (7) are more negatively affected by microbes than average. 
+
+```{r GS BM Save, echo=FALSE}
+
+saveRDS(BMGeno, file = "04_analyses/02_models/Output/BiomassGS.RDS")
+
+```
+
+## Aboveground Biomass
+
+```{r GS Aboveground Biomass, message = F}
+BMGenoA <- lmer(log(massA) ~ Geno*Soil + Level + (1|table), 
+                data = dat1)
+```
+
+*Check the model diagnostics*
+
+```{r GS BMA diagnostics, echo = F, fig.dim= c(6,8)}
+check_model(BMGenoA)
+```
+
+The model looks good to me. Now time to review the model summary.
+
+```{r GS BMA Summary, echo = F}
+BMGenoA %>% tidy() %>% kable()
+```
+
+Once more, the same pattern of the overall performance model regarding the effect of microbes and water. Now for the genotype-specific effects:
+
+Only TAS (5) has higher aboveground biomass than average.
+
+Two genotypes had microbe-sensitivities that differed from the average pattern. CRI (1) is again relatively insensitive to soil microbes and is nearly the same size in both live in sterile treatments. TAS (5) and YON (7) are more sensitive to microbes than average. 
+
+So far the result that TAS is very sensitive to microbes is robust between models. 
+
+## Belowground Biomass
+
+```{r GS Belowground Biomass, message = F}
+BMGenoB <- lmer(log(massB) ~ Geno*Soil + Level + (1|table), 
+                data = filter(dat1, rootsample == "Y"))
+```
+
+*Check the model diagnostics*
+
+```{r GS BMB diagnostics, echo = F, message=F, fig.dim= c(6,8)}
+check_model(BMGenoB)
+```
+
+```{r GS BMB Summary, echo = F}
+BMGenoB %>% tidy() %>% kable()
+```
+
+Broad effects of microbes and moisture are again consistent with prior models. Note: the effect of microbes on roots is quite large here relative to the scale of the data. 
+
+We see that MOC (4) has smaller roots than average while YON (7) has larger roots than average.
+
+As far as different sensitivities are concerned, it appears that MOC (4) is less sensitive to soil microbes than other genotypes, which is probably for the best because it already has smaller than average roots! TAS (5) and YON (7) are more sensitive than the average genotype, and this is a result that is robust and consistent across all biomass measures. 
+
+## Biomass Allocation Patterns
+
+```{r GS Biomass Allocation, message = F}
+BMGenoR <- lmer(log(massA/massB) ~ scale(log(totBM)) + Geno*Soil + Level + (1|table), 
+                data = filter(dat1, rootsample == "Y"))
+```
+
+*model diagnostics not yet available for this model *
+
+```{r GS BMR Summary, echo = F}
+BMGenoR %>% tidy() %>% kable()
+```
+
+Overall we see (once again) that plants tend to invest more in roots than shoots, and that as plants get larger they invest more and more of that growth into the roots. In the presence of microbes, a smaller proportion of a plant's biomass is root. The most likely causes are that plants are investing fewer resources into roots when microbes are present OR (and I think this is more likely), the microbes are attacking/consuming the roots, such that the end result is smaller roots compared to sterile soil plants.  
+
+G15 (2) and YON (7) have more root allocation than other genotypes, while MOC (4) and TAS (5) have more shoot allocation than other genotypes. 
+
+The only genotype whose allocation seems differentially sensitive to microbes when compared to the others is VIR (6), which is insensitive to microbes as far as allocation is concerned. VIR (6) is still smaller in the presence of microbes, because it is not insensitive to microbes in any model, but this smallness is equally represented by reductions in both root and shoot biomass. 
+
+```{r GS BMR Save, echo=FALSE}
+
+saveRDS(BMGenoR, file = "04_analyses/02_models/Output/BiomassRatioGS.RDS")
+
+```
+<a id="summary-one"></a>
+
+## Summary of Patterns in Biomass
+
+The LEO soil microbes tend to negatively affect plant biomass, and although both roots and shoots are smaller due to microbes, the microbes seem to really reduce root growth, which results in decreased belowground biomass allocation. I think that the microbes are attacking/consuming the root tissue because this tissue would have the most bio-available nutrients in the entire pot. 
+
+Both TAS and YON seem to be especially sensitive to soil microbes and experienced the greatest reductions in biomass when microbes are introduced, while MOC and CRI tend to be rather insensitive to microbes and are typically of similar size in both live and sterile soil. VIR is the only genotype that appears to be uniformly impacted by microbes rather than disproportionately impacted at the roots. 
+
+[contents](#toc)
+
+<a id="item-three"></a>
+
+# Relative Growth Rate Models
+
+Jump to [summary](#summary-two)
+
+## RGR at the beginning of the experiment
+```{r GS RGR early, message = F}
+RGR.GS.1 <- lmer(RGR_d ~ Geno * Soil + Level +
+                  HtPrevCensus + (1|table),
+                data = filter(census1, CensusNo == 2 & status == 1))
+```
+
+*check the model diagnostics*
+```{r GS Early RGR diagnostics, echo = F, fig.dim= c(6,8)}
+check_model(RGR.GS.1)
+```
+
+```{r GS RGR1 Summary, echo = F}
+RGR.GS.1 %>% tidy() %>% kable()
+```
+
+At the beginning of the experiment, microbes make plants grow more slowly, and growth rates increase as soil moisture increases.
+
+INA (3) appears to have a slightly above-average growth rate but is also particularly impacted by the presence of microbes.
+
+*note to self* It seems like there are some cases in which the microbes are kind of equalizing. Some genotypes might overperform in the absence of microbes, but then they are extra affected and are put back into line. Look for this pattern in some of the figures that you create to see how common it is, and then check to make sure that it's not some kind of statistical artifact if it is common. There's no multicollinearity among the fixed effects (confirmed via additive model), but could multicollinearity among genotypes (within a fixed effect) cause a problem? Make sure this isn't true. 
+
+## RGR across the entire experiment
+
+```{r playing around with the data to improve fit}
+census2 <- census1 %>% filter(RGR_d >= quantile(RGR_d, na.rm = T, 0.1) & RGR_d <= quantile(RGR_d, na.rm = T, 0.9))
+```
+
+
+```{r RGR GS entire, message = F}
+RGR.GS.2 <- lmer(RGR_d ~ Geno*Soil + Level +
+                  scale(HtPrevCensus) +
+                  (1|table) + (1|pot) + (1|CensusNo),
+                data = filter(census2, CensusNo != 1 & status == 1))
+```
+
+*check the model diagnostics*
+Looks good! Following the diagnostics of the original model, the PPC didn't look great and was not fit to the spread of the data because of extremely long tails. I filtered the data so that the model analyzes only the data between quantile 0.1 - 0.9, and now the model predictions do a very good job of fitting the data.
+
+```{r Entire RGR diagnostics, echo = F, fig.dim= c(6,8)}
+check_model(RGR.GS.2)
+```
+
+```{r RGR2 Summary, echo = F}
+RGR.GS.2 %>% tidy() %>% kable()
+```
+
+TAS (5) seems to have faster growth rates while YON (7) seems to have slower growth rates for the duration of the experiment.
+
+Overall, soil microbes slow plant growth.
+
+Only one genotype has a specific sensitivity between growth rate and microbes that deviates from the average and that is VIR (6), who is marginally insensitive to microbes compared to the other genotypes. 
+
+```{r GS RGR Save, echo=FALSE}
+
+saveRDS(RGR.GS.2, file = "04_analyses/02_models/Output/RGRGS.RDS")
+
+```
+
+<a id="summary-two"></a>
+
+## Genotype Specific RGR Summary
+
+There is no interesting behavior popping out of these RGR models. Nothing that tells a story. We see that VIR is less sensitive to microbe effects on growth rates than the other genotypes, and VIR is the only genotype that experienced proportional reductions in biomass in response to microbes. However, I don't see how these two things are related. 
+
+[contents](#toc)
+
+<a id="item-four"></a>
+
+# Genotype Specific Survival Models
+
+Jump to [summary](#summary-three)
+
+## Survival across time
+```{r GS Survival Model Data Prep, echo = F}
+census3 <- census1 %>% 
+  mutate(Status = ifelse(status == 1, 0, 1)) #p.mort with cloglog
+
+census4 <- census1  %>% group_by(pot) %>% 
+  arrange(CensusNo) %>%
+  filter(row_number() == n()) %>%
+  ungroup()
+#thinned data set that contains only the final observation for each plant. 
+#if censusno < 5, then the plant died before the end of the experiment.
+
+census4$status <- ifelse(census4$CensusNo < 6, 0, census4$status)
+```
+
+
+*note*: I'm using a "cloglog" link to account for census interval in the model, due to the math underlying a cloglog link, I need to model mortality rather than survival, so all of the outputs from the model will be interpreted as probability of mortality. In a hidden block of code I've created a new "status" column where 0 = alive and 1 = dead. 
+
+```{r GS Mortality Entire}
+Mort.GS <- glmer(Status ~ Geno + Soil + Level  + scale(HtPrevCensus) +
+                  (1|pot) + (1|table),
+                 data = filter(census3, CensusNo != 1 & HtPrevCensus > 0),
+                 family = binomial(link = "cloglog"),
+                 glmerControl(optimizer = "bobyqa",
+                              optCtrl = list(maxfun = 10000)),
+                 offset = scale(log(censusint)))
+```
+
+**To Do:** Model diagnostics... check old code from prior studies.
+
+```{r Mort.GS Summary, echo = F}
+Mort.GS %>% tidy() %>% kable()
+```
+
+There's nothing to report here. There really isn't genotypic variation in survival except that YON (7) has an elevated probability of mortality throughout the duration of the experiment. Overall, the model in which the genotypes are random intercepts is far superior to this model.
+
+## Survival to the end of the experiment
+
+Because now we are only looking at one observation for survival (whether or not the plant was alive at the end of the experiment) we are modeling survival, not mortality. 
+
+```{r Surv.GS model, message= F}
+Surv.GS <- glmer(status ~ Geno+ Soil + Level + (1|table),
+                 data = census4,
+                 family = binomial(),
+                 glmerControl(optimizer = "bobyqa",
+                              optCtrl = list(maxfun = 10000)))
+```
+
+
+
+```{r Surv.GS Summary, echo = F}
+Surv.GS %>% tidy() %>% kable()
+```
+
+Same as in the mortality model. There really isn't variation among genotypes regarding their mortality probabilities. 
+
+<a id="summary-three"></a>
+
+## Summary of Survival Models
+
+The best survival models are the models that don't investigate the patterns within the genotypes. I've modeled among-genotype survival with both the top genotypes and all genotypes to see if this makes a difference and overall there is almost no variation among genotypes in there survival probabilities. The only one that stands out is that YON has a higher probability of survival throughout the duration of the experiment.
+
+[contents](#toc)
+
+<a id="item-five"></a>
+
+## Genotype Specific Photosynthesis and Transpiration
+
+Jump to [summary](#summary-four)
+
+### Genotype Specific Photosynthesis
+
+```{r GS PSN Mod, message=FALSE}
+PSN.GS <- lmer(std_PSN ~ Geno + Soil + Level + (1|table),
+                data = filter(dat1, std_PSN > 0))
+```
+
+*check the model diagnostis*
+
+
+```{r GS PSN diagnostics, echo = F, fig.dim= c(6,8)}
+check_model(PSN.GS)
+```
+
+
+I don't love the model fit, but I can't think of a better distribution or some way to modify the data. logging the response does not improve model fit in this case.
+
+```{r GS PSN summary, echo = F}
+PSN.GS %>% tidy() %>% kable()
+```
+
+Nothing really affects photosynthetic rates (as before). 
+
+### Genotype Specific Transpiration
+
+```{r GS TPN Mod, message=FALSE}
+TPN.GS <- lmer(log1p(std_TPN) ~ Geno * Soil + Level + (1|table),
+                data = dat1)
+```
+
+*check the model diagnostis*
+
+```{r GS TPN diagnostics, echo = F, fig.dim= c(6,8)}
+check_model(TPN.GS)
+```
+
+Looks better than the photosynthesis model
+
+```{r GS TPN summary, echo = F}
+TPN.GS %>% tidy() %>% kable()
+```
+Very little going on regarding transpiration, but the model definitely fits the data better. We don't see any relationships with soil moisture or general effects of microbes. There are potentially some genotype-specific effects of microbes, but these are all marginal (0.05 < *p* < 0.10). Both CRI (1) and VIR (6) have reduced transpiration rates in the presence of microbes, while MOC (4) has increased transpiration rates in the presence of microbes. 
+
+```{r GS TPN Save, echo=FALSE}
+
+saveRDS(TPN.GS, file = "04_analyses/02_models/Output/TranspirationGS.RDS")
+
+```
+
+<a id="summary-four"></a>
+
+### Summary of Photosynthesis and Transpiration
+
+Not much is happening in these models. This is unsurprising given that there isn't a ton of data and replicates within genotype to work with here (plus the plants were so small!). I think that in the presence of genotype specific effects are much more likely when the plants are inoculated with rhizobia. 
+
+Some of the genotypes seem to have transpiration rates that are sensitive to soil microbes, but there's not much of a story that we can make with that at least so far. For a publication that is. It's relevant to predictions for the LEO hillslope.
+[contents](#toc)
+
+<a id="item-six"></a>
+
+## Summary of Genotype Specific Effects
+
+We continue to see the general trend that performance tends to be worse in the presence of soil microbes. Some of the most interesting genotype specific results come from the biomass models where we see that TAS and YON are more sensitive to microbes, while MOC and CRI are rather robust and insensitive to microbes. 
+
+There is very little to report for growth rates, survival, transpiration, and photosynthesis. I think my top models here will be total biomass and biomass allocation. I'll look into RGR and transpiration too, to see if those seem interesting after I simulate the difference between live and sterile to estimate the "microbe effect".
+
+[contents](#toc)
