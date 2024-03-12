@@ -1,0 +1,489 @@
+---
+title: "Solid Geochemistry"
+author: "Valerie Milici"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+rm(list =ls())
+
+library(tidyverse) #clean data manipulation
+library(lme4) #mixed effects models
+library(lmerTest) #p-values from linear mixed models
+library(MASS) #for contr.sdif
+library(broom.mixed) #model diagnostics
+library(performance) #model diagnostics
+library(rmarkdown) #to render the document
+library(knitr) # for pretty markdown tables
+library(car) # for bartlett test
+library(stats) #bootstrap
+library(parallel) #bootstrap in parallel
+library(corrr) #for PCAs
+library(ggcorrplot) #PCA
+library(FactoMineR) #PCA
+library(factoextra) #PCA
+library(ggfortify) #PCA 
+
+dat <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/AllPerformanceGeochem.csv")
+```
+
+<a id="toc"></a>
+
+# Table of Contents
+
+ [Introduction](#item-one)
+ 
+ [Carbon](#item-two)
+ 
+ [Genotype-Specific Carbon](#item-three)
+ 
+ [Nitrogen](#item-four)
+ 
+ [Genotype-Specific Nitrogen](#item-five)
+ 
+<a id="item-one"></a>
+
+# Introduction
+
+Below are the models and results of the solid geochemistry analysis (carbon and nitrogen) from the July - October 2022 GCR Task 2A experiment. These models explore broad trends in how the microbes that have naturally colonized the Landscape Evolutionary Observatory (LEO) at Biosphere 2, vascular plants (Alfalfa, *Medicago sativa*), and soil moisture variation affect geochemical weathering during early pedogenesis (measured from pore-water/discharge samples). We selected 17 genotypes of alfalfa to measure the effects of intraspecific variation on the above processes. We expect that variation at the root level will have the greatest effect on pedogenesis, so we selected the genotypes based on their variation in root morphology along two axes: root length and fibrous root density. 
+
+Both the broad trends from soil treatment and genotype-specific trends are evaluated in this document.
+
+Of the original 17 genotypes planted into this experiment, 7 genotypes had decent (50% or higher) survival rates in the LEO basalt, and for the genotype-specific models, I will filter the data to only consider these seven genotypes. The included genotypes are MOC, YON, VIR, TAS, CRI, G15, and K19. The first five genotypes (MOC - CRI) have been selected for planting on the LEO hillslopes because they produce genotype-specific patterns, G15 is an alternate option in case we fail to produce enough seed from one of the top 5 genotypes, and K19 is included so that it can be absorbed into the intercept estimate (genotype is a sum to zero contrast), allowing me to see all genotypes of interest in the model output. 
+
+## Set the Model Contrasts
+
+First, I will define how the model interprets soil moisture ("Level"). I am using standard difference contrasts so that the intercept can be interpreted as the "average soil moisture effect"- just like in the case of a sum-to-zero contrast- & the model output will tell us how increased soil moisture affects patterns in microbial effects on plant performance (i.e., level 2 vs level 1 & level 3 vs level 2).
+
+Next, I am going to set the genotypes as a sum to zero contrast so that the intercept is the average genotype response and the fixed effect estimates can be interpreted as the deviance of each genotype from the average. 
+
+```{r echo=FALSE}
+
+# make "NA" genos all "C" for control (so they can be used as random effects)
+
+dat$Geno <- ifelse(is.na(dat$Geno), "C", dat$Geno)
+
+#prepare the data for the genotype specific model
+outs <- c("515", "639", "A20", "D16", "R24", "SWE", "212", "105", "G74", "K19", "G15")
+
+dat1 <- dat %>% filter(!Geno %in% outs, !is.na(Geno)) 
+
+dat1$Soil <- relevel(factor(dat1$Soil),
+                       ref = "S")
+```
+
+
+```{r Set Model Contrasts}
+
+# For general soil treatment model
+dat$Level <- as.factor(dat$Level)
+contrasts(dat$Level) <- contr.sdif(3)
+
+# Reduced dataset for genotype specific models
+dat1$Level <- as.factor(dat1$Level)
+contrasts(dat1$Level) <- contr.sdif(3)
+
+dat1$Geno <- factor(dat1$Geno,
+                    levels = c("CRI", "YON", "MOC",
+                               "TAS", "VIR"))
+contrasts(dat1$Geno) <- contr.sum(5)
+```
+
+When interpreting the broad soil trends, the following letters corrospond to each treatment:
+
+N = no microbes, no plant (abiotic control)
+
+C = with microbes, no plant
+
+S = no microbes, with plant
+
+L = with microbes, with plant
+
+When interpreting the model output, the following numbers corrospond to each genotype:
+
+<a id="geno-key"></a>
+
+1 = CRI
+
+2 = YON
+
+3 = MOC
+
+4 = TAS
+
+5 = VIR
+
+6 = G15
+
+<a id="item-two"></a>
+
+## Broad Carbon Trends
+
+Jump to [summary](#summary-one) of models
+
+### Total Carbon 
+
+```{r TC model selection, include=F }
+TC1 <- lmer(TC_s ~ Soil * Level  +
+                 (1|Geno)  + (1|table) + (1|batch_STC),
+                data = dat)
+
+TC3 <- lmer(TC_s ~ plant_YN * Level  +
+                 (1|Geno) + (1|table) + (1|batch_STC),
+                data = dat)
+TC4 <- lmer(TC_s ~ Soil + Level  +
+                 (1|Geno) + (1|table) + (1|batch_STC),
+                data = dat)
+
+TC6 <- lmer(TC_s ~ plant_YN + Level  +
+                 (1|Geno)  + (1|table) + (1|batch_STC),
+                data = dat)
+
+compare_performance(TC1, TC3, TC4, TC6, rank = T)
+
+```
+
+```{r}
+dat$Soil <- relevel(factor(dat$Soil),
+                       ref = "N")
+```
+
+```{r TC model, message = F}
+TC <- lmer(TC_s ~ Soil + Level  +
+                 (1|Geno) + (1|table) + (1|batch_STC),
+                data = dat)
+```
+
+*Check the model diagnostics*
+
+```{r TC diagnostics, echo = F}
+check_model(TC)
+```
+
+```{r TC summary table, echo=F}
+TC %>% tidy() %>% kable()
+```
+
+Total carbon peaks at intermediate soil moisture, and the addition of microbes (but not plants) increases TC. I also ran this model including biomass as a fixed effect, but the added complexity did not improve the model, so I am not reporting those results.
+
+### Total Inorganic Carbon
+
+```{r IC model selection, include=F }
+IC1 <- lmer(IC_s ~ Soil * Level  +
+                 (1|Geno)  + (1|table) + (1|batch_SIC),
+                data = dat)
+
+IC3 <- lmer(IC_s ~ plant_YN * Level +
+                 (1|Geno) + (1|table) + (1|batch_SIC),
+                data = dat)
+IC4 <- lmer(IC_s ~ Soil + Level  +
+                 (1|Geno) + (1|table) + (1|batch_SIC),
+                data = dat)
+
+
+IC6 <- lmer(IC_s ~ plant_YN + Level  +
+                 (1|Geno)  + (1|table) + (1|batch_SIC),
+                data = dat)
+
+compare_performance(IC1,  IC3, IC4, IC6, rank = T)
+
+```
+
+```{r}
+dat$Soil <- relevel(factor(dat$Soil),
+                       ref = "N")
+```
+
+```{r IC model, message = F}
+IC <- lmer(log1p(IC_s) ~ Soil * Level  +
+                 (1|Geno)  + (1|table) + (1|batch_SIC),
+                data = filter(dat, IC_s < 0.08))
+```
+
+*Check the model diagnostics*
+
+```{r IC diagnostics, echo = F}
+check_model(IC)
+```
+
+```{r IC summary table, echo=F}
+IC %>% tidy() %>% kable()
+```
+
+I can't get this model to fit the data ok. I won't interpret it until it fits ok.
+
+### Total Organic Carbon
+
+```{r OC model selection, include=F }
+OC1 <- lmer(TOC_s ~ Soil * Level +
+                 (1|Geno)  + (1|table) + (1|batch_STOC),
+                data = dat)
+
+OC3 <- lmer(TOC_s ~ plant_YN * Level  +
+                 (1|Geno) + (1|table) + (1|batch_STOC),
+                data = dat)
+OC4 <- lmer(TOC_s ~ Soil + Level +
+                 (1|Geno) + (1|table) + (1|batch_STOC),
+                data = dat)
+
+OC6 <- lmer(TOC_s ~ plant_YN + Level  +
+                 (1|Geno)  + (1|table) + (1|batch_STOC),
+                data = dat)
+
+compare_performance(OC1, OC3, OC4, OC6, rank = T)
+
+```
+
+
+```{r OC model, message = F}
+OC <- lmer(TOC_s ~ plant_YN + Level +
+                 (1|Geno)  + (1|table) + (1|batch_STOC),
+                data = filter(dat, TOC_s < 0.6))
+```
+
+*Check the model diagnostics*
+
+```{r OC diagnostics, echo = F}
+check_model(OC)
+```
+
+```{r OC summary table, echo=F}
+OC %>% tidy() %>% kable()
+```
+
+Absolutely nothing affects organic carbon except that *maybe* organic carbon is a little lower at the highest soil moisture treatment. 
+
+### Summary
+
+We see that total carbon peaks at intermediate soil moisture and that microbes alone may increase total soil carbon. Nothing affects organic carbon (and the model for inorganic carbon is too ugly to interpret).
+
+[Table of Contents](#toc)
+
+<a id="item-three"></a>
+
+## Genotype-Specific Trends
+
+```{r TC GS model selection, include=F }
+TCGeno1 <- lmer(TC_s ~ Soil + Geno * Level  +
+                  (1|batch_STC) + (1|table),
+                data = dat1)
+
+TCGeno2 <- lmer(TC_s ~ Soil + Geno + Level+
+                 (1|batch_STC) + (1|table),
+                data = dat1)
+
+TCGeno3 <- lmer(TC_s ~ Soil * Geno + Level  +
+                 (1|batch_STC) + (1|table),
+                data = dat1)
+
+compare_performance(TCGeno1, TCGeno2, TCGeno3, rank = T)
+
+
+```
+
+```{r}
+dat1$Geno <- factor(dat1$Geno,
+                    levels = c("CRI", "VIR", "MOC",
+                               "TAS", "YON"))
+contrasts(dat1$Geno) <- contr.sum(5)
+
+
+```
+
+```{r TC Geno Model, message=FALSE, warning=FALSE}
+TCGeno <- lmer(log(TC_s) ~  Geno + Level  +
+                  (1|batch_STC) + (1|table),
+                data = filter(dat1, TC_s > quantile(TC_s, na.rm = T, 0.1)))
+
+summary(TCGeno)
+
+```
+
+```{r TC Geno Diagnostics, echo = FALSE}
+check_model(TCGeno)
+```
+
+It's... ok. I've gotten the diagnostics to improve some by filtering the data.
+
+```{r TC Geno Model summary, echo=FALSE}
+
+TCGeno %>% tidy() %>% kable()
+```
+
+YON has below average TC and TAS has above average TC. TC peaks at intermediate soil moisture. 
+
+### Genotype-Specific Inorganic Carbon
+
+```{r IC GS model selection, include=F }
+ICGeno1 <- lmer(IC_s ~ Soil + Geno * Level  +
+                  (1|batch_SIC) + (1|table),
+                data = dat1)
+
+ICGeno2 <- lmer(IC_s ~ Soil + Geno + Level+
+                 (1|batch_SIC) + (1|table),
+                data = dat1)
+
+ICGeno3 <- lmer(IC_s ~ Soil * Geno + Level  +
+                 (1|batch_SIC) + (1|table),
+                data = dat1)
+
+compare_performance(ICGeno1, ICGeno2, ICGeno3, rank = T)
+
+
+```
+
+```{r}
+dat1$Geno <- factor(dat1$Geno,
+                    levels = c("CRI", "VIR", "MOC",
+                               "TAS", "YON"))
+contrasts(dat1$Geno) <- contr.sum(5)
+```
+
+```{r IC Geno Model, message=FALSE, warning=FALSE}
+ICGeno <- lmer(IC_s ~ Soil * Geno + Level  +
+                 (1|batch_SIC) + (1|table),
+                data = dat1)
+
+#summary(ICGeno)
+
+```
+
+```{r}
+check_model(ICGeno)
+
+```
+
+still... no. 
+
+### Genotype-Specific Organic Carbon
+
+```{r OC GS model selection, include=F }
+OCGeno1 <- lmer(TOC_s ~ Soil + Geno * Level+
+                 (1|batch_STOC) + (1|table),
+                data = dat1)
+
+OCGeno2 <- lmer(TOC_s ~ Soil + Geno + Level+
+                 (1|batch_STOC) + (1|table),
+                data = dat1)
+
+OCGeno3 <- lmer(TOC_s ~ Soil * Geno + Level  +
+                 (1|batch_STOC) + (1|table),
+                data = dat1)
+
+compare_performance(OCGeno1, OCGeno2, OCGeno3, rank = T)
+
+
+```
+
+```{r}
+dat1$Geno <- factor(dat1$Geno,
+                    levels = c("CRI", "YON", "MOC",
+                               "TAS", "VIR"))
+contrasts(dat1$Geno) <- contr.sum(5)
+```
+
+```{r OC GS model, message=F }
+OCGeno <- lmer(TOC_s ~  Geno + Level  +
+                  (1|batch_STOC) + (1|table),
+                data = filter(dat1, TOC_s < 0.6))
+```
+
+```{r echo=FALSE}
+check_model(OCGeno)
+```
+
+
+```{r echo=FALSE}
+OCGeno %>% tidy() %>% kable()
+```
+
+CRI has above average organic carbon while TAS has below average. 
+
+## Broad Trends in Soil Nitrogen
+
+```{r Nitrogen model selection, include=F }
+N1 <- lmer(TN_s ~ Soil * Level +
+                 (1|Geno)  + (1|table) + (1|batch_STC),
+                data = dat)
+
+N3 <- lmer(TN_s ~ plant_YN * Level  +
+                 (1|Geno) + (1|table) + (1|batch_STC),
+                data = dat)
+N4 <- lmer(TN_s ~ Soil + Level +
+                 (1|Geno) + (1|table) + (1|batch_STC),
+                data = dat)
+
+N6 <- lmer(TN_s ~ plant_YN + Level  +
+                 (1|Geno)  + (1|table) + (1|batch_STC),
+                data = dat)
+
+compare_performance(N1, N3, N4, N6, rank = T)
+
+```
+
+
+```{r N model, message = F}
+N <- lmer(TN_s ~ Soil + Level +
+                 (1|Geno) + (1|table) + (1|batch_STC),
+                data = filter(dat, TN_s < 0.008 & TN_s > 0))
+```
+
+*Check the model diagnostics*
+
+```{r N diagnostics, echo = F}
+check_model(N)
+```
+
+```{r N summary table, echo=F}
+N %>% tidy() %>% kable()
+```
+
+The range of values for nitrogen are excruciatingly small. From 0 to 0.008 ug/mg
+
+Sterile soil with a plant seems to have higher Nitrogen than the abiotic treatment (N), but the L and C treatments (both contain microbes) are no different than N. Maybe microbes are using N more efficiently than plants so that N, S, and L all resemble each other?
+
+## Genotype Specific Nitrogen
+
+```{r N GS model selection, include=F }
+NGeno1 <- lmer(TN_s ~ Soil + Geno * Level+
+                 (1|batch_STC) + (1|table),
+                data = filter(dat1, TN_s < 0.008 & TN_s > 0))
+
+NGeno2 <- lmer(TN_s ~ Soil + Geno + Level+
+                 (1|batch_STC) + (1|table),
+                data = filter(dat1, TN_s < 0.008 & TN_s > 0))
+
+NGeno3 <- lmer(TN_s ~ Soil * Geno + Level  +
+                 (1|batch_STC) + (1|table),
+                data = filter(dat1, TN_s < 0.008 & TN_s > 0))
+
+compare_performance(NGeno1, NGeno2, NGeno3, rank = T)
+
+
+```
+
+```{r}
+dat1$Geno <- factor(dat1$Geno,
+                    levels = c("CRI", "VIR", "MOC",
+                               "TAS", "YON"))
+contrasts(dat1$Geno) <- contr.sum(5)
+```
+
+```{r N GS model, message=F }
+NGeno <- lmer(TN_s ~ Soil * Geno + Level  +
+                 (1|batch_STC) + (1|table),
+                data = filter(dat1, TN_s < 0.006 & TN_s > 0))
+```
+
+```{r echo=FALSE}
+check_model(NGeno)
+```
+
+
+```{r echo=FALSE}
+NGeno %>% tidy() %>% kable()
+```
+
+There's not much going on. Soil N is a little lower in live soil compared to sterile soil, so we see again a trend where the presence of microbes reduces soil N. Soil N may also be lowest at high soil moisture. Soils associated with CRI in the live soil treatment have above average N. 

@@ -16,6 +16,7 @@ b4<- read.csv("data/00_PrepData/MP_Val_Cation_Reruns_Sept_25_2023.csv")
 b1Cats <- read.csv("data/00_PrepData/Partial_Cation_Clean.csv")
 # Anion
 anion <- read.csv("data/00_PrepData/2A_anions.csv")
+anion_batch <- read.csv("data/00_PrepData/AnionBatch.csv")
 #Carbon
 TC <- read.csv("data/00_PrepData/TC_dat.csv")
 NPOC <- read.csv("data/00_PrepData/NPOC_Dat.csv")
@@ -44,7 +45,7 @@ b1Cat <- b1Cats %>%
   rename(pot = Sample) %>%
   mutate(batch = as.integer(5),
          mu_NH4 = as.numeric(NA)) %>%
-  select(c(1,7,2,3,8,4:6))
+  dplyr::select(c(1,7,2,3,8,4:6))
 
 #object to be used with the final merge
 Cation <- rbind(CatDat, b1Cat)
@@ -65,7 +66,20 @@ Anion <- anion %>%
             mu_Br = 10*mean(Br.mg.L., na.rm = T),
             mu_NO3 = 10*mean(NO3.mg.L., na.rm = T),
             mu_PO4 = 10*mean(PO4.mg.L., na.rm = T),
-            mu_SO4 = 10*mean(SO4.mg.L., na.rm = T))  
+            mu_SO4 = 10*mean(SO4.mg.L., na.rm = T)) 
+# combine batch information with the data
+
+Anion2 <- merge(Anion, anion_batch, by = "pot", all = T)
+
+# manually add in anion information to row 14 (L-1-g74-01)
+# data/Extras/ExcelFiles/Anions/Anions/*April_13_2023
+
+Anion2[14,2] <- 5.767 #fluoride
+Anion2[14,3] <- 139.288 #chloride
+Anion2[14,5] <- 3.961 #bromide
+Anion2[14,6] <- 10.217 #nitrate
+Anion2[14,8] <- 208.046 #sulfate
+
 
 # Step 3: TC/OC/IC -------------------------------------------------------------
 
@@ -85,12 +99,12 @@ EC <- EC %>%
   rename(EC = EC..us.cm.)
 
 #Step 5: Merge them all together -----------------------------------------------
-PW_1 <- merge(Cation, Anion, all = T)
+PW_1 <- merge(Cation, Anion2, all = T)
 PW_2 <- merge(PW_1, Carbon, all = T)
 PW_3 <- merge(PW_2, EC, all = T)
 
 #nonsense rows that are empty and the samples don't exist
-outs <- c("L-2-CRI-02", "L-2-CRI-07", "L-3-R25-03")
+outs <- c("L-2-CRI-02", "L-2-CRI-07", "L-3-R25-03", "GH RO SAMPLE")
 
 PW_3 <- filter(PW_3, !pot %in% outs)
 #save

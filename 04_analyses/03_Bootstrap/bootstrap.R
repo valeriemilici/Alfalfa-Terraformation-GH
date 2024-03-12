@@ -17,12 +17,8 @@ clusterEvalQ(cl, library(lme4))
 
 ### Read in Models -------------------------------------------------------------
 #plant performance
-BioRat <- readRDS("04_analyses/02_models/output/BMGenoR.RDS")
-BioTot <- readRDS("04_analyses/02_models/output/BMGenoT.RDS")
-BmSoilTot <- readRDS("04_analyses/02_models/output/BMSoilT.RDS")
-BmSoilRat <- readRDS("04_analyses/02_models/output/BMSoilR.RDS")
-PSN <- readRDS("04_analyses/02_models/output/PSNGeno.RDS")
-TPN <- readRDS("04_analyses/02_models/output/TPNGeno.RDS")
+TotBM <- readRDS("04_analyses/02_models/output/BMSoilT.RDS")
+RootPropBM <- readRDS("04_analyses/02_models/output/BMSoilR.RDS")
 Surv <- readRDS("04_analyses/02_models/output/SurvGeno1.RDS")
 #Geochemistry Soil
 EC <- readRDS("04_analyses/02_models/Output/ECSoil.RDS")

@@ -18,8 +18,8 @@ library(performance) #model diagnostics
 library(rmarkdown) #to render the document
 library(knitr) # for pretty markdown tables
 
-dat <- read.csv("data/ModData/AllPerformanceGeochem.csv") 
-census <- read.csv("data/ModData/FullCensusTimeSeries.csv")
+dat <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/AllPerformanceGeochem.csv")
+census <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/FullCensusTimeSeries.csv")
 
 outs <- c("515", "639", "A20", "D16", "R24", "SWE", "212", "105", "G74")
 #genotypes that have not survived well

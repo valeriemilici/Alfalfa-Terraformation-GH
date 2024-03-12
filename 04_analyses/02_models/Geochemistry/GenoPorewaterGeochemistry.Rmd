@@ -1,0 +1,972 @@
+---
+title: "The Alfalfa Small-Pot Experiments: Genotype-Specific Pore-Water Geochemistry Models"
+author: "Valerie Milici"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+rm(list =ls())
+
+library(tidyverse) #clean data manipulation
+library(lme4) #mixed effects models
+library(lmerTest) #p-values from linear mixed models
+library(MASS) #for contr.sdif
+library(broom.mixed) #model diagnostics
+library(performance) #model diagnostics
+library(rmarkdown) #to render the document
+library(knitr) # for pretty markdown tables
+library(car) # for bartlett test
+library(stats) #bootstrap
+library(parallel) #bootstrap in parallel
+library(corrr) #for PCAs
+library(ggcorrplot) #PCA
+library(FactoMineR) #PCA
+library(factoextra) #PCA
+library(ggfortify) #PCA 
+
+dat <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/AllPerformanceGeochem.csv")
+```
+
+<a id="toc"></a>
+
+# Table of Contents
+
+ [Introduction](#item-one)
+ 
+ [pH and EC](#item-two)
+ 
+ [Carbon](#item-three)
+ 
+ [Nitrogen](#item-four)
+ 
+ [Cations](#item-five)
+ 
+ [Anions](#item-six)
+ 
+ [PCA](#item-seven)
+
+<a id="item-one"></a>
+
+# Introduction
+
+Below are the models and results of genotype-specific pore-water geochemistry data from the July - October 2022 GCR Task 2A experiment. These models explore broad trends in how the microbes that have naturally colonized the Landscape Evolutionary Observatory (LEO) at Biosphere 2, vascular plants (Alfalfa, *Medicago sativa*), and soil moisture variation affect geochemical weathering during early pedogenesis (measured from pore-water/discharge samples). We selected 17 genotypes of alfalfa to measure the effects of intraspecific variation on the above processes. We expect that variation at the root level will have the greatest effect on pedogenesis, so we selected the genotypes based on their variation in root morphology along two axes: root length and fibrous root density. 
+
+The pore-water samples were collected at the end of a discharge experiment that allowed us to calculate the mass balance of water in the pots. In this discharge experiment, 150 ml of DI water were added to the pots and the discharge from this final watering event provided the samples used in this analysis. Because the pots had three different baseline soil saturation levels, there is variation in the amount of discharge resulting from each pot. As a result, total discharge "Dmass_tot" is a fixed effect in all models to account for this variation. Throughout the experiment, the pots were watered such that they never produced discharge, so the pore-water/discharge samples used in these analyses represent the only discharge event. More details on the experimental design and discharge experiment are available in the detailed experimental protocol *insert hyperlink to the protocol at a later date *
+
+*These models will help us to evaluate the following questions:*
+
+1. How does intraspecific variation affect our expectations for the effects of vascular plants on geochemical weathering rates?
+
+2. How does intraspecific variation alter the strength of plant-microbial interactions on weathering?
+
+3. How does abiotic variation (soil moisture) affect these relationships?  
+
+4. To what extent can root traits explain variation in patterns and relationships, and are they a good trait to use when generating hypotheses or planning experiments?
+
+Of the original 17 genotypes planted into this experiment, 7 genotypes had decent (50% or higher) survival rates in the LEO basalt, and for the genotype-specific models, I will filter the data to only consider these seven genotypes. The included genotypes are MOC, YON, VIR, TAS, CRI, G15, and K19. The first five genotypes (MOC - CRI) have been selected for planting on the LEO hillslopes because they produce genotype-specific patterns, G15 is an alternate option in case we fail to produce enough seed from one of the top 5 genotypes, and K19 is included so that it can be absorbed into the intercept estimate (genotype is a sum to zero contrast), allowing me to see all genotypes of interest in the model output. 
+
+## Set the Model Contrasts
+
+First, I will define how the model interprets soil moisture ("Level"). I am using standard difference contrasts so that the intercept can be interpreted as the "average soil moisture effect"- just like in the case of a sum-to-zero contrast- & the model output will tell us how increased soil moisture affects patterns in microbial effects on plant performance (i.e., level 2 vs level 1 & level 3 vs level 2).
+
+Next, I am going to set the genotypes as a sum to zero contrast so that the intercept is the average genotype response and the fixed effect estimates can be interpreted as the deviance of each genotype from the average. 
+
+```{r echo=FALSE}
+
+outs <- c("515", "639", "A20", "D16", "R24", "SWE", "212", "105", "G74")
+#genotypes that have not survived well
+
+dat1 <- dat %>% filter(!Geno %in% outs) 
+
+dat1$Soil <- relevel(factor(dat1$Soil),
+                       ref = "S")
+```
+
+
+```{r Set Model Contrasts}
+dat1$Level <- as.factor(dat1$Level)
+contrasts(dat1$Level) <- contr.sdif(3)
+
+dat1$Geno <- factor(dat1$Geno,
+                    levels = c("CRI", "YON", "MOC",
+                               "TAS", "VIR", "G15", "K19"))
+contrasts(dat1$Geno) <- contr.sum(7)
+```
+
+When interpreting the model output, the following numbers corrospond to each genotype:
+
+<a id="geno-key"></a>
+
+1 = CRI
+
+2 = YON
+
+3 = MOC
+
+4 = TAS
+
+5 = VIR
+
+6 = G15
+
+<a id="item-two"></a>
+
+## Genotype Specific pH and EC
+
+Jump to [summary](#summary-one) of models
+
+### pH model
+
+```{r pH Soil GS model selection, include=F }
+pHGeno1 <- lmer(pH ~ Soil + Geno * Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table),
+                data = dat1)
+
+pHGeno2 <- lmer(pH ~ Soil + Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table),
+                data = dat1)
+
+pHGeno3 <- lmer(pH ~ Soil * Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table),
+                data = dat1)
+
+compare_performance(pHGeno1, pHGeno2, pHGeno3, rank = T)
+
+
+```
+
+
+
+```{r pH Geno, echo=F, message=F}
+pHGeno <- lmer(pH ~ Soil + Geno + Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table),
+                data = filter(dat1, pH > quantile(pH, na.rm = T, 0.1)))
+```
+
+*check the model diagnostics*
+
+```{r pH Geno diagnostics, echo=F, fig.dim= c(6,8)}
+check_model(pHGeno)
+```
+
+Most things look ok. By filtering the data I have gotten the model predictions to better match the distribution of the data. 
+
+```{r pH Geno summary table, echo=F}
+pHGeno %>% tidy() %>% kable()
+```
+
+We can see that sterile soil treatments have a lower pH than the live soil treatments, which is consistent with the soil treatment model. Only one [genotype](#geno-key), G15 deviates from average and is associated with higher pH than the other genotypes. 
+
+### EC model
+
+```{r EC Geno model selection, include=F }
+ECGeno1 <- lmer(EC ~ Soil + Geno * Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table),
+                data = filter(dat1, EC < 20000))
+
+ECGeno2 <- lmer(EC ~ Soil + Geno + Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table),
+                data = filter(dat1, EC < 20000))
+
+ECGeno3 <- lmer(EC ~ Soil * Geno + Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table),
+                data = filter(dat1, EC < 20000))
+
+compare_performance(ECGeno1, ECGeno2, ECGeno3, rank = T)
+
+anova(ECGeno2)
+
+```
+
+```{r EC Geno, message = F}
+ECGeno <- lmer(EC ~ Soil + Geno + Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table),
+                data = filter(dat1, EC < 20000))
+```
+
+*check the model diagnostics*
+
+```{r EC Geno diagnostics, echo=F, fig.dim= c(6,8)}
+check_model(ECGeno)
+```
+
+
+```{r EC Geno summary table, echo=F}
+ECGeno %>% tidy() %>% kable()
+```
+
+There is very little variation here in EC. The only potential trend is that the MOC [genotype](#geno-key) is associated with lower EC than the other genotypes, although this effect is marginal. 
+## Summary of pH and EC
+
+<a id="summary-one"></a>
+
+There is slight variation among genotypes in regards to pH and EC. We see that G15 is associated with higher pH, while MOC is associated with lower EC. The weathering products of basalt are basic, so an interpretation of higher pH is that G15 may be weathering the basalt more than other genotypes. EC is a broad measure of weathering, and the results suggest that MOC may be weathering the basalt less than other genotypes. This is interesting because MOC is one of the most robust genotypes, so I would expect more weathering from MOC, but this may mean that MOC is able to perform well because it makes more efficient use of the nutrients it has access to. A caution here is that we don't have agreement between the models (although there is also not conflict), so the degree to which we can make claims in regards to weathering seems small. 
+
+[Table of Contents](#toc)
+
+<a id="item-three"></a>
+
+## Carbon (TC, IC, OC) 
+
+Jump to [summary](#summary-two) of Carbon models.
+
+### Total Carbon
+
+```{r TC Geno model selection, include=F }
+
+dat1$batch_TC <- as.factor(dat1$batch_TC)
+contrasts(dat1$batch_TC) <- contr.sum(3)
+
+TCGeno1 <- lmer(TC_ppm ~ Soil + Geno * Level + scale(Dmass_tot) + as.factor(batch_TC) + (1|dis_table) + (1|table),
+                data = dat1)
+
+TCGeno2 <- lmer(TC_ppm ~ Soil + Geno + Level + scale(Dmass_tot) + as.factor(batch_TC) + (1|dis_table) + (1|table),
+                data = dat1)
+
+TCGeno3 <- lmer(TC_ppm ~ Soil*Geno + Level + scale(Dmass_tot) + as.factor(batch_TC) + (1|dis_table) + (1|table),
+                data = dat1)
+
+compare_performance(TCGeno1, TCGeno2, TCGeno3, rank = T)
+
+
+```
+
+
+```{r total carbon Geno, message = F}
+TCGeno <- lmer(TC_ppm ~ Soil*Geno + Level + scale(Dmass_tot) + as.factor(batch_TC) + (1|dis_table) + (1|table),
+                data = dat1)
+```
+
+*check the model diagnostics*
+
+```{r TC Geno diagnostics, echo=F, fig.dim= c(6,8)}
+check_model(TCGeno)
+```
+
+
+```{r TC Geno summary table, echo=F}
+TCGeno %>% tidy() %>% kable()
+```
+
+There is quite a bit going on here with genotype-specific patterns in total carbon and in this case there is a relationship between genotypes, microbes, and total carbon. [Geno](#geno-key) 3 - MOC has below average carbon, while 6 - G15 has above average carbon. In the presence of microbes, total carbon has a general increase and some genotypes are more sensitive to microbes than other. 1 - CRI and 6 - G15 are negatively impacted by microbes and have result in reduced total carbon, while 3 - MOC has a strong and positive relationship between microbes and carbon. 
+
+As an aside, we see a repetition of a pattern that we've seen before, and TC decreases between the medium and high soil moisture treatments. 
+
+### Effects of biomass on total carbon
+
+
+```{r TC Geno and biomass, message = F}
+
+TCGeno2 <- lmer(TC_ppm ~ Soil*Geno + scale(totBM) + Level + 
+                  scale(Dmass_tot) + as.factor(batch_TC) + (1|table) + (1|dis_table),
+                  data = dat1)
+
+```
+
+
+
+```{r TC Geno biomass diagnostics, echo=F, fig.dim= c(6,8)}
+check_model(TCGeno2)
+```
+looks good to me!
+
+```{r TC Geno biomass summary table, echo=F}
+TCGeno2 %>% tidy() %>% kable()
+```
+
+We would expect that biomass would impact TC, but it does not. These patterns are definitely driven by intraspecific variation and interactions with microbes. 
+
+### Inorganic Carbon
+```{r IC Geno model selection, include=F }
+
+
+ICGeno1 <- lmer(IC ~ Soil + Geno * Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_IC),
+                data = dat1)
+
+ICGeno2 <- lmer(IC ~ Soil + Level + Geno + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_IC),
+                data = dat1)
+
+ICGeno3 <- lmer(IC ~ Soil*Geno + Level + scale(Dmass_tot)  +
+                 (1|dis_table) + (1|table) + (1|batch_IC),
+                data = dat1)
+
+compare_performance(ICGeno1, ICGeno2, ICGeno3, rank = T)
+
+
+```
+
+```{r include=FALSE}
+
+anova(ICGeno3)
+
+```
+
+```{r IC Geno, message = F}
+
+ICGeno <- lmer(IC ~ Soil*Geno + Level + scale(Dmass_tot)  +
+                 (1|dis_table) + (1|table) + (1|batch_IC),
+                data = dat1)
+```
+
+*Check the model diagnostics*
+
+```{r IC Geno diagnostics, echo=F}
+
+check_model(ICGeno)
+```
+
+```{r IC Geno summary table, echo=F}
+ICGeno %>% tidy() %>% kable()
+```
+
+Here we see the same patterns for IC that we saw for TC. This makes sense because OC is very low in the samples, and TC is dominated by IC. 
+
+3 - MOC has low IC while 6 - G15 has high IC. Microbes increase IC. 3 - MOC is sensitive (and positively so) with microbes and is associated with above average levels of IC in the presence of microbes. 6 - G15 is negatively associated with micrboes and has decreased IC. 
+
+### Effects of biomass on inorganic carbon 
+
+
+```{r IC Geno biomass, message = F}
+
+ICGeno2 <- lmer(IC ~ Soil*Geno + Level + scale(Dmass_tot) + scale(totBM) +
+                  (1|dis_table) + (1|table) + (1|batch_IC),
+                data = dat1)
+```
+
+```{r IC Geno biomass diagnostics, echo=F}
+
+check_model(ICGeno2)
+```
+
+```{r IC Geno biomass summary table, echo=F}
+ICGeno2 %>% tidy() %>% kable()
+```
+
+There continues to be no relationship between biomass and IC.
+
+### Organic Carbon
+
+```{r OC Geno model selection, include=F }
+dat$batch_NPOC <- as.factor(dat$batch_NPOC)
+contrasts(dat$batch_NPOC) <- contr.sum(3)
+
+OCGeno1 <- lmer(NPOC ~ Soil + Geno*Level + scale(Dmass_tot) + batch_NPOC +
+                  (1|dis_table) + (1|table),
+                data = dat1)
+
+OCGeno2 <- lmer(NPOC ~ Soil + Geno + Level + scale(Dmass_tot) + batch_NPOC +
+                  (1|dis_table) + (1|table),
+                data = dat1)
+
+OCGeno3 <- lmer(NPOC ~ Soil*Geno + Level + scale(Dmass_tot)  + batch_NPOC +
+                  (1|dis_table) + (1|table),
+                data = dat)
+
+compare_performance(OCGeno1, OCGeno2, OCGeno3, rank = T)
+```
+
+
+```{r include=F }
+
+anova(OCGeno2)
+
+```
+
+
+```{r OC Geno, message = F}
+
+OCGeno <- lmer(log(NPOC) ~ Soil + Geno + Level + scale(Dmass_tot) + batch_NPOC +
+                  (1|dis_table) + (1|table),
+                data = filter(dat1, NPOC < 9))
+```
+
+*Check the model diagnostics*
+
+```{r OC Geno diagnostics, echo=F}
+
+check_model(OCGeno)
+
+```
+
+Eh... just ok.The model is doing a bad job with the high values. 
+
+```{r OC Geno summary table, echo=F}
+OCGeno %>% tidy() %>% kable()
+```
+
+There are quite a few genotype specific trends with OC. 2 - YON & 4 - TAS have above-average OC, while 3 - MOC, 5 - VIR, and 6 - G15 have below-average OC.  
+
+### Effects of biomass on organic carbon 
+
+
+```{r OC Geno biomass, message = F}
+
+dat$batch_NPOC <- as.factor(dat$batch_NPOC)
+contrasts(dat$batch_NPOC) <- contr.sum(3)
+
+OCGeno2 <- lmer(log(NPOC) ~ Soil + Geno + Level + scale(Dmass_tot) + scale(totBM) + batch_NPOC +  (1|dis_table) + (1|table),
+                data = filter(dat1, NPOC < 9))
+
+```
+
+```{r OC Geno biomass diagnostics, echo=F}
+
+check_model(OCGeno2)
+```
+
+```{r OC Geno biomass summary table, echo=F}
+OCGeno2 %>% tidy() %>% kable()
+```
+
+Once more biomass has no relationship with OC
+
+<a id="summary-two"></a>
+
+### Carbon Summary
+
+There is intraspecific variation in TC, IC, and OC. The results for TC and IC are nearly identical, likely because IC dominates while there is minimal OC in the samples. 
+
+IC is another proxy for weathering, because the weathering of basalt produces inorganic carbon molecultes (carbonates). MOC has a strong positive relationship between microbes and IC, while G15 is negatively impacted by the presence of soil microbes. 
+
+Neither microbes nor soil moisture affects OC, but there is intraspecific variation in OC. So this is a relationship that is driven by vascular plants. Two genotypes have above average OC (YON and TAS) while two genotypes have below average OC (MOC and G15). This one is harder for me to interpret because OC is bioavailable carbon, and I would expect low values both for genotypes that produce very little OC and genotypes that quickly use OC. I wonder how the literature usually interprets variation in these values.
+
+Across the board, biomass does not affect porewater carbon concentration.
+
+back to [table of contents](#toc)
+
+<a id="item-four"></a>
+
+## Nitrogen
+
+### Nitrate
+
+```{r Nitrate Geno model selection, include=F }
+
+#Step 1:
+NO3Geno1 <- lmer((mu_NO3) ~ Soil + Geno * Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_anion),
+                data = dat1)
+
+NO3Geno2 <- lmer(mu_NO3 ~ Soil + Geno + Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_anion),
+                data = dat1)
+
+NO3Geno3 <- lmer(mu_NO3 ~ Soil*Geno + Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_anion),
+                data = dat1)
+
+compare_performance(NO3Geno1, NO3Geno2, NO3Geno3, rank = T)
+
+```
+
+```{r echo=FALSE}
+anova(NO3Geno1)
+
+```
+
+
+
+```{r Nitrate Geno Model, message=F}
+
+NO3Geno <- lmer(log(mu_NO3) ~ Soil + Geno * Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_anion),
+                data = filter(dat1, mu_NO3 < 60 & mu_NO3 > 3))
+
+```
+
+*Check Model Diagnostics*
+
+```{r Nitrate Diagnostics, echo=FALSE, fig.dim=c(6,8)}
+check_model(NO3Geno)
+```
+
+
+```{r Nitrate Geno Model Summary, echo=FALSE}
+NO3Geno %>% tidy() %>% kable()
+```
+
+Microbes don't affect NO3, but there is intraspecific variation and genotype specific interactions with soil moisture. 5 - TAS and 6 - G15 have above average NO3 concentrations, and then at intermediate soil moisture 2 - YON has above average NO3, and 4 - VIR has very low NO3. 
+
+### Nitrite
+
+Only 1 sample/150 produced a reading for Nitrite. 
+
+### Ammonium 
+
+```{r Ammonium Geno model selection, include=F }
+
+NH4Geno1 <- lmer(log(mu_NH4) ~ Soil + Geno * Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_anion),
+                data = dat1)
+
+NH4Geno2 <- lmer(log(mu_NH4) ~ Soil + Geno + Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table)+ (1|batch_anion),
+                data = dat1)
+
+NH4Geno3 <- lmer(log(mu_NH4) ~ Soil*Geno + Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table)+ (1|batch_anion),
+                data = dat1)
+
+compare_performance(NH4Geno1, NH4Geno2, NH4Geno3, rank = T)
+```
+
+We don't have enough data from Ammonium to run a genotype specific model.
+
+[Table of Contents](#toc)
+
+<a id="item-five"></a>
+
+## Cations
+
+Jump to [summary](#summary-three) of Cation models.
+
+### Sodium
+
+```{r Sodium Geno model selection, include=F }
+
+NaGeno1 <- lmer(log(mu_Na) ~ Soil + Geno * Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_cat),
+                data = dat1)
+
+NaGeno2 <- lmer(log(mu_Na) ~ Soil + Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_cat),
+                data = dat1)
+
+NaGeno3 <- lmer(log(mu_Na) ~ Soil*Geno + Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_cat),
+                data = dat1)
+
+compare_performance(NaGeno1, NaGeno2, NaGeno3, rank = T)
+
+```
+
+
+
+```{r Sodium Geno Model, message=F}
+NaGeno <- lmer(log(mu_Na) ~ Soil + Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_cat),
+                data = filter(dat1, mu_Na < 4000))
+```
+
+*Check Model Diagnostics*
+
+```{r Sodium Geno Diagnostics, echo=FALSE, fig.dim=c(6,8)}
+check_model(NaGeno)
+```
+
+
+```{r Sodium Geno Model Summary, echo=FALSE}
+NaGeno %>% tidy() %>% kable()
+```
+
+There is a lot of genotypic variation in sodium. 1 - CRI, 2 - YON, and 4 - TAS all have above average sodium, while 3 - MOC, 5 - VIR, and 6 - G15 all have below average sodium. Sodium peaks at intermediate soil moisture, but this does not have a relationship with genotypes. Microbes do not affect sodium, so sodium is a case of something that is driven by plants and not microbes. 
+
+### Calcium
+
+```{r Calcium Geno model selection, include=F }
+
+CaGeno1 <- lmer(log(mu_Ca) ~ Soil + Geno * Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_cat),
+                data = filter(dat1, mu_Ca >= quantile(mu_Ca, na.rm = T, 0.2)))
+
+CaGeno2 <- lmer(log(mu_Ca) ~ Soil + Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_cat),
+                data = filter(dat1, mu_Ca >= quantile(mu_Ca, na.rm = T, 0.2)))
+
+CaGeno3 <- lmer(log(mu_Ca) ~ Soil*Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_cat),
+                data = filter(dat1, mu_Ca >= quantile(mu_Ca, na.rm = T, 0.2)))
+
+compare_performance(CaGeno1, CaGeno2, CaGeno3, rank = T)
+```
+
+
+```{r Calcium Geno Model, message=F}
+CaGeno <- lmer(log(mu_Ca) ~ Soil*Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_cat),
+                data = dat1)
+```
+
+*Check Model Diagnostics*
+
+```{r Calcium Geno Diagnostics, echo=FALSE, fig.dim=c(6,8)}
+check_model(CaGeno)
+```
+
+This model is suspicious. I'm going to interpret it, but I won't use it in a MS
+
+```{r Calcium Geno Model Summary, echo=FALSE}
+CaGeno %>% tidy() %>% kable()
+```
+
+We see the same split among the genos that we saw with sodium. This is looking like a repeat of the pattern that I reported in the summer with some very high values and some very low values. But this time I am accounting for all of these different batches and we re-ran them. I guess I can compare the old values with the updated values and see if they are different. Then this is likely a true pattern and not machine error. What a headache.
+
+### Magnesium
+
+```{r Magnesium Geno model selection, include=F }
+
+MgGeno1 <- lmer(log(mu_Mg) ~ Soil + Geno * Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_cat),
+                data = dat1)
+
+MgGeno2 <- lmer(log(mu_Mg) ~ Soil + Geno+ Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_cat),
+                data = dat1)
+
+MgGeno3 <- lmer(log(mu_Mg) ~ Soil*Geno + Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_cat),
+                data = dat1)
+
+compare_performance(MgGeno1, MgGeno2, MgGeno3, rank = T)
+
+anova(MgGeno2)
+```
+
+
+```{r Magnesium Geno Model, message=F}
+MgGeno <- lmer(log(mu_Mg) ~ Soil + Geno+ Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_cat),
+                data = dat1)
+```
+
+*Check Model Diagnostics*
+
+```{r Magnesium Geno Diagnostics, echo=FALSE, fig.dim=c(6,8)}
+check_model(MgGeno)
+```
+
+
+```{r Magnesium Geno Model Summary, echo=FALSE}
+MgGeno %>% tidy() %>% kable()
+```
+
+Microbes increase Mg but do not interact with any genos. 2 - YON has above average Mg and 5 - VIR has below average Mg. 
+
+### Potassium
+
+```{r Potassium Geno model selection,  include=F }
+
+#Step 1: Which format of treatment is best?
+KGeno1 <- lmer(log(mu_K) ~ Soil + Geno * Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_cat),
+                data = dat1)
+
+KGeno2 <- lmer(log(mu_K) ~ Soil + Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_cat),
+                data = dat1)
+
+KGeno3 <- lmer(log(mu_K) ~ Soil*Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_cat),
+                data = dat1)
+
+compare_performance(KGeno1, KGeno2, KGeno3, rank = T)
+
+```
+
+
+```{r Potassium Geno Model, message=F}
+KGeno <- lmer(log(mu_K) ~ Soil*Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_cat),
+                data = dat1)
+```
+
+*Check Model Diagnostics*
+
+```{r Potassium Geno Diagnostics, echo=FALSE, fig.dim=c(6,8)}
+check_model(KGeno)
+```
+
+
+```{r K Geno Model Summary, echo=FALSE}
+KGeno %>% tidy() %>% kable()
+```
+
+K concentrations peak at intermediate soil moisture. The only genotype-specific pattern is that in the presence of soil microbes, 1 - CRI is associated with deacreased potassium.  
+
+<a id="summary-three"></a>
+
+## Cations Summary
+
+Both Sodium and Calcium show a lot of intraspecific trends that mirror each other, and an interaction wiht microbes. I'm not sure if this is suspicous. 
+
+Magnesium does not have an interaction with microbes and slight intraspecific variation.
+
+Potassium has almost nothing going on, but 1 genotype has a negative interaction with microbes. 
+
+[Table of Contents](#toc)
+
+<a id="item-six"></a>
+
+## Anions
+
+Jump to [summary](#summary-four) of anions.
+
+### Fluoride
+
+```{r Fluoride Geno model selection,  include=F }
+
+FGeno1 <- lmer(log(mu_F) ~ Soil + Geno * Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_anion),
+                data = dat1)
+
+FGeno2 <- lmer(log(mu_F) ~ Soil + Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_anion),
+                data = dat1)
+
+FGeno3 <- lmer(log(mu_F) ~ Soil * Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_anion),
+                data = dat1)
+
+compare_performance(FGeno1, FGeno2, FGeno3, rank = T)
+
+```
+
+
+```{r Fluoride Geno Model, message=F}
+FGeno <- lmer(log(mu_F) ~ Soil + Geno * Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_anion),
+                data = filter(dat1, mu_F < 40))
+```
+
+*Check Model Diagnostics*
+
+```{r Fluoride Geno Diagnostics, echo=FALSE, fig.dim=c(6,8)}
+check_model(FGeno)
+```
+
+
+```{r F Geno Model Summary, echo=FALSE}
+FGeno %>% tidy() %>% kable()
+```
+
+Fluoride is higher in the presence of soil microbes, with no interaction with geno. 3 - Moc and 5 - VIR have above average fluoride while 4 - TAS has below average fluoride. Fluroide levels drop at high soil moisture and this is especially true for 4 - TAS, but 2 - YON lacks a relationship with soil moisture and does not have less fluoride at high soil moisture.  
+
+### Bromide
+
+```{r Br Geno model selection, include=F }
+
+BrGeno1 <- lmer(mu_Br ~ Soil + Geno * Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_anion),
+                data = dat1)
+
+BrGeno2 <- lmer(mu_Br ~ Soil + Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_anion),
+                data = dat1)
+
+BrGeno3 <- lmer(mu_Br ~ Soil * Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_anion),
+                data = dat1)
+
+compare_performance(BrGeno1, BrGeno2, BrGeno3, rank = T)
+
+```
+
+
+```{r Br Geno Model, message=F}
+BrGeno <- lmer(log(mu_Br) ~ Soil + Geno * Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_anion),
+                data = filter(dat1, mu_Br < 50))
+```
+
+*Check Model Diagnostics*
+
+```{r Br Geno Diagnostics, echo=FALSE, fig.dim=c(6,8)}
+check_model(BrGeno)
+```
+
+
+```{r Br Geno Model Summary, echo=FALSE}
+BrGeno %>% tidy() %>% kable()
+```
+
+G15 has below average bromide. As soil moisture increases from low to medium, 3 - MOC has above average Br, while 4 - TAS has below average Br. As soil moisture increases from medium to high 4 - TAS recovers back to normal values, and then 5 - VIR and 6 - G15 both have lower Br. 
+
+### Chloride
+
+```{r Cl Geno model selection, include=F }
+
+ClGeno1 <- lmer(mu_Cl ~ Soil + Geno * Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_anion),
+                data = filter(dat1, mu_Cl < quantile(mu_Cl, na.rm = T, 0.9)))
+
+ClGeno2 <- lmer(mu_Cl ~ Soil + Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_anion),
+                data = filter(dat1, mu_Cl < quantile(mu_Cl, na.rm = T, 0.9)))
+
+ClGeno3 <- lmer(mu_Cl ~ Soil * Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_anion),
+                data = filter(dat1, mu_Cl < quantile(mu_Cl, na.rm = T, 0.9)))
+
+compare_performance(ClGeno1, ClGeno2, ClGeno3, rank = T)
+
+```
+
+
+```{r Cl Geno Model, message=F}
+ClGeno <- lmer(mu_Cl ~ Soil + Geno * Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_anion),
+                data = filter(dat1, mu_Cl < quantile(mu_Cl, na.rm = T, 0.9)))
+```
+
+*Check Model Diagnostics*
+
+```{r Cl Geno Diagnostics, echo=FALSE, fig.dim=c(6,8)}
+check_model(ClGeno)
+```
+
+
+```{r Cl Geno Model Summary, echo=FALSE}
+ClGeno %>% tidy() %>% kable()
+```
+
+There's more chloride when microbes are present and chloride may peak at intermediate soil moisture. 
+
+4 - TAS has above average cl and 6 -  G15 has below average Cl. 2 - YON and 6 - G15 each have dramatic increases in Cl at intermediate soil moisture, while 3 - MOC decreases at intermediate soil moisture. 6 - G15 experiences a decrease in Cl at high soil moisture. 
+
+### Phosphate
+
+```{r PO4 Geno model selection,  include=F }
+
+densityPlot(dat$mu_PO4) #assess the distribution of the data and how to filter
+
+
+PO4Geno1 <- lmer(mu_PO4 ~ Soil + Geno * Level + scale(Dmass_tot) +
+                (1|dis_table) + (1|table) + (1|batch_anion),
+                data = filter(dat1, mu_PO4 <= 25))
+
+PO4Geno2 <- lmer(mu_PO4 ~ Soil + Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_anion),
+                data = filter(dat1, mu_PO4 <= 25))
+
+PO4Geno3 <- lmer(mu_PO4 ~ Soil*Geno + Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_anion),
+                data = filter(dat1, mu_PO4 <= 25))
+
+compare_performance(PO4Geno1, PO4Geno2, PO4Geno3, rank = T)
+
+```
+
+
+```{r PO4 Geno Model, message=F}
+PO4Geno <- lmer(mu_PO4 ~ Soil + Geno * Level + scale(Dmass_tot) +
+                (1|dis_table) + (1|table) + (1|batch_anion),
+                data = filter(dat1, mu_PO4 <= 25))
+summary(PO4Geno)
+```
+
+*Check Model Diagnostics*
+
+```{r PO4 Geno Diagnostics, echo=FALSE, fig.dim=c(6,8)}
+check_model(PO4Geno)
+```
+
+
+```{r PO4 Geno Model Summary, echo=FALSE}
+PO4Geno %>% tidy() %>% kable()
+```
+
+Different genotypes have different responses to soil moisture. PO4 for 4 - TAS dips at intermediate soil moisture and then rebounds at high soil moisture. 1 - CRI peaks at high soil moisture, while 3 - MOC dips at high soil moisture. 
+
+### Sulfate
+
+```{r SO4 Geno model selection, warning = F, message = F, include=F }
+
+densityPlot(dat$mu_SO4) #assess the distribution of the data and how to filter
+
+SO4Geno1 <- lmer(mu_SO4 ~ Soil + Geno * Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_anion),
+                data = filter(dat1, mu_SO4 <= 4000))
+
+SO4Geno2 <- lmer(mu_SO4 ~ Soil + Geno + Level + scale(Dmass_tot) +
+                 (1|dis_table) + (1|table) + (1|batch_anion),
+                data = filter(dat1, mu_SO4 <= 4000))
+
+SO4Geno3 <- lmer(mu_SO4 ~ Soil*Geno + Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_anion),
+                data = filter(dat1, mu_SO4 <= 4000))
+
+compare_performance(SO4Geno1, SO4Geno2, SO4Geno3, rank = T)
+```
+
+
+```{r SO4 Geno Model, message=F}
+SO4Geno <- lmer(mu_SO4 ~ Soil + Geno + Level + scale(Dmass_tot) +
+                  (1|dis_table) + (1|table) + (1|batch_anion),
+                data = filter(dat1, mu_SO4 <= 4000))
+summary(SO4Geno)
+```
+
+*Check Model Diagnostics*
+
+```{r SO4 Geno Diagnostics, echo=FALSE, fig.dim=c(6,8)}
+check_model(SO4Geno)
+```
+
+This is the best I can do with model fit. I don't love the two peaks. 
+
+```{r SO4 Geno Model Summary, echo=FALSE}
+SO4Geno %>% tidy() %>% kable()
+```
+
+The model selection phase told me that the model that included an interaction between genotypes and microbes was the best model, but the results from that model were suspicious. In sterile soil YON had low SO4 while G15 had high SO4 and in live soil YON had high SO4 and G15 had low SO4. Perfectly balanced results like that are a warning sign to me that there is a collinearity issue. It was hard to tell if the VIFs were high because of collinearity or because of the interaction, so I reduced the model to the version with no interaction to be safe. 
+
+In the additive only model, the only trend we see is that SO4 increases from low to medium soil moisture and stays the same between medium to high soil moisture. 
+
+<a id="summary-four"></a>
+
+### Summary of Anions 
+
+There are a lot of little patterns to report here and some models are better than others. I'm not going to both summarizing all of the results again but instead will lay out my plan for communicating and visualizing the results. I will have to create some kind of big table where each row is a genotype and summarize the significant model effects, and then all of the individual tables for each model will be in a supplement. 
+
+For a figure I will create a 3 panel figure where each panel is a soil moisture level and each genotype will be laid out along the x-axis. I will create model predictions for each anion for each genotype at each moisture level, so a reader can visualize how intraspecific variation and soil moisture affect geochemical weathering profiles. 
+
+[Table of Contents](#toc)
+
+<a id="item-seven"></a>
+
+## PCA
+
+```{r Prep the PCA data, echo=FALSE, include=FALSE}
+
+dat2 <- dat1 %>% dplyr::select(1,10,22:34, 36, 40, 42,43) %>% 
+  filter(!is.na(Geno), Geno != "K19")
+
+colSums(is.na(dat2))
+#remove NO2, PO4, NH4
+
+dat3 <- dat2 %>% dplyr::select(!c(mu_NO2, mu_PO4, mu_NH4, mu_Li, mu_Br, mu_NO3, mu_Ca)) %>%
+  filter(!is.na(mu_F), !is.na(mu_Cl), !is.na(mu_SO4),
+         !is.na(pH), !is.na(EC), !is.na(mu_Na), !is.na(mu_K),
+         !is.na(mu_Mg), !is.na(TC_ppm), !is.na(IC)
+         )
+
+colSums(is.na(dat3)) 
+
+dat4 <- dat3 %>% dplyr::select(!c(pot, Geno)) #now only numbers for PCA
+
+#with this level of keeping variables/filtering we can build a PCA from 85 observations
+```
+
+```{r make PCA and describe dimensions, echo=FALSE, include=FALSE}
+pwGeno_pca <- PCA(dat4)
+```
+
+```{r plot PCA}
+pWGeno <- fviz_pca_biplot(pwGeno_pca, 
+                col.ind = dat3$Geno, palette = "jco", 
+                addEllipses = T, ellipse.level = 0.95, label = "none", repel = TRUE,
+                legend.title = "Genotype") +
+  theme_classic(12)
+
+pWGeno
+```
+
+Obviously there isn't distict separation here, but there is a little bit more variation here than for the soil treatments. These genotypes had (at times) distinct interactions with microbes and soil moisture, and the PCA can't show that variation. We see essentially perfect overlap between G15, VIR, and MOC. Are these genotypes similar in some way? Could their overlap help us to identify what is it about the genotypic variation that could lead to distinct patterns (if the plants were larger)?
+
+
+
+[Table of Contents](#toc)

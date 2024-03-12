@@ -20,8 +20,8 @@ library(performance) #model diagnostics
 library(rmarkdown) #to render the document
 library(knitr) # for pretty markdown tables
 
-dat <- read.csv("data/ModData/AllPerformanceGeochem.csv") 
-census <- read.csv("data/ModData/FullCensusTimeSeries.csv")
+dat <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/AllPerformanceGeochem.csv") 
+census <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/FullCensusTimeSeries.csv")
 
 #Remove NAs and simplify data to one observation per plant
 BMdat <- dat %>%
@@ -30,6 +30,7 @@ BMdat <- dat %>%
            Soil != "P") %>%
   #Only living plants have data
   filter(status == 1)
+
 ```
 
 <a id="toc"></a>
@@ -157,25 +158,33 @@ We see the exact same pattern in belowground biomass as we saw in aboveground bi
 
 ## Biomass Allocation
 
-```{r Biomass Allocation, message = F}
-BMSoilR <- lmer(log(massA/massB) ~ log(totBM) + Soil * Level + (1|Geno) + (1|table), 
+```{r Root Mass Fraction, message = F}
+
+RMF <- lmer(massB/totBM ~ log(totBM) + Soil * Level + (1|Geno) + (1|table), 
                 data = filter(BMdat, rootsample == "Y"))
+
 ```
+
+The model for root mass fraction is parameterized as suggested by Poorter et al. (2012) *Frontiers in Plant Science*
 
 *Check the model diagnostics*
 
-Note: I can't use my typical function to check this model because it can't handle the model response. I need to look into this a bit more to include diagnostics. Considering the previous models have all been ok, I'm going to assume the model is ok for now. 
+```{r RMF Diagnostics, echo=F, fig.dim= c(6,8)}
+check_model(RMF)
+```
+ 
 
 
-```{r BMR Summary, echo = F}
-BMSoilR %>% tidy() %>% kable()
+```{r RMF Summary, echo = F}
+RMF %>% tidy() %>% kable()
 ```
 
 As is typical (especially for alfalfa), a larger proportion of total biomass is allocated to belowground biomass than aboveground biomass. Overall, as plants become larger (total biomass increases), there is increased root allocation compared to shoot allocation. Plants in sterile soil once again differ from plants in live soil; they have greater belowground biomass allocation than do live soil plants. So, microbes affect biomass allocation patterns. Soil moisture does not affect allocation patterns in either live or sterile soil plants. 
 
 ```{r BM ratio Save, echo=FALSE}
 
-saveRDS(BMSoilR, file = "04_analyses/02_models/Output/BiomassRatio.RDS")
+saveRDS(RMF, file = "04_analyses/02_models/Output/RMF.RDS")
+
 
 ```
 

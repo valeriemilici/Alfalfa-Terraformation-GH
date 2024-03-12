@@ -114,7 +114,7 @@ dat5 <- merge(dat4, s_geo, by = "pot", all.x = T)
 
 dat6 <- dat5 %>%
   #removes random "X" and "notes" columns
-  dplyr::select(1:12, 14:21, 24:51, 53:59) %>%
+  dplyr::select(1:12, 14:21, 24:52, 54:60) %>%
   #calculate final biomass columns
   mutate(totBM = massA + massB,
          BMrat = massB/massA) 
