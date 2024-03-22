@@ -25,6 +25,7 @@ library(ggcorrplot) #PCA
 library(FactoMineR) #PCA
 library(factoextra) #PCA
 library(ggfortify) #PCA 
+library(ggeffects) #for quick beautiful plotting
 
 dat <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/AllPerformanceGeochem.csv")
 ```
@@ -67,9 +68,9 @@ There are four soil treatments in this experiment:
 
 <ins> The Bare Soil Treatments </ins>
 
-1. C = no plants, inoculated with microbes
+1. C = no plants, no microbes
 
-2. N = no plants, no microbe inoculation
+2. N = no plants, microbe inoculation
 
 <ins> The Planted Treatments </ins>
 
@@ -106,7 +107,7 @@ Jump to [summary](#summary-one) of models
 
 ```{r echo = F}
 dat$Soil <- relevel(factor(dat$Soil), 
-                     ref = "L")
+                     ref = "S")
 ```
 
 ### pH model
@@ -143,18 +144,47 @@ check_model(pHSoil)
 looks good to me!
 
 ```{r pH Soil summary table, echo=F}
-pHSoil %>% tidy() %>% kable()
+pHSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
-Ok, so we can see that soil moisture does affect porewater pH, which peaks at intermediate soil moisture. We can also see some marginal effects of soil. Treatments N and S have lower pHs than L pots, but this is super marginal. This implies that the presence of plants and microbes together leads to higher weathering (weathering will increase pH in basalt). If you focus on the std. error around the estimate, you can see that live and sterile soil treatments (aka basalt that contains vascular plants) has a small std. error around the estimate (~ 0.06 in both cases), while both bare soil treatments have large std. error (~ 0.14). The model is struggling to estimate what the pH is for those bare soil treatments, compared to the planted treatments. It may be that plants make some values, such as pH more predictable/deterministic. The [variance tests](#b-testpH) tell us that planted treatments have significantly less variation than bare soil treatments. 
+Ok, so we can see that soil moisture does affect porewater pH, which peaks at intermediate soil moisture. We can also see some marginal effects of soil. Treatments N and S have lower pHs than L pots, but this is super marginal. This implies that the presence of plants and microbes together leads to higher weathering (weathering will increase pH in basalt) than just microbes or plant alone, so a potential interaction. If you focus on the std. error around the estimate, you can see that live and sterile soil treatments (aka basalt that contains vascular plants) has a small std. error around the estimate (~ 0.06 in both cases), while both bare soil treatments have large std. error (~ 0.14). The model is struggling to estimate what the pH is for those bare soil treatments, compared to the planted treatments. It may be that plants make some values, such as pH more predictable/deterministic. The [variance tests](#b-testpH) tell us that planted treatments have significantly less variation than bare soil treatments. 
 
-This might have to do with the number of samples in each treatment. There are fewer bare samples than live samples. Investigate this further on Monday.
+```{r pH plot, message=FALSE, echo=FALSE}
+
+pHpreds <- ggemmeans(pHSoil, terms = "Soil", type = "fixed")
+
+pHpreds$x <- factor(pHpreds$x, c("C", "N", "S", "L"))
+
+# Create Plot
+
+pHplot <- ggplot() +
+  geom_pointrange(data = pHpreds,
+                  mapping = aes(x, predicted,
+                                ymin = conf.low, ymax = conf.high),
+                  size = 1.2,
+                  position = position_dodge(width = 0.2)) +
+  xlab("Soil Biota Treatment") +
+  ylab("Porewater pH") +
+  scale_x_discrete(labels = c("C" = "Abiotic \n Control", "N" = "Microbes \nOnly",
+                              "S" = "Plant \nOnly", "L" = "Plant & \n Microbes")) +
+  theme_classic(18)
+
+ggsave(pHplot, filename = "figures/pHSoil.png",
+       height = 6, width =8, units = "in")
+
+pHplot
+
+```
+
+```{r save pH model, echo=FALSE}
+saveRDS(pHSoil, file = "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/pHSoil.RDS")
+```
 
 ### EC model
 
 ```{r echo = F}
 dat$Soil <- relevel(factor(dat$Soil), 
-                     ref = "L")
+                     ref = "C")
 ```
 
 ```{r EC Soil model selection, include=F }
@@ -176,7 +206,7 @@ compare_performance(ECSoil1, ECSoil2, ECSoil3, rank = T)
 In the case of EC, the best model only compares whether or not the pots contained a plant, so that is the model form that we will move forward with. 
 
 ```{r EC Soil, message = F}
-ECSoil <- lmer(log(EC) ~ plant_YN + Level + scale(Dmass_tot) +
+ECSoil <- lmer(log(EC) ~ Soil + Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table),
                 data = dat)
 ```
@@ -189,25 +219,50 @@ check_model(ECSoil)
 looks good to me!
 
 ```{r EC Soil summary table, echo=F}
-ECSoil %>% tidy() %>% kable()
+ECSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 EC also peaks at intermediate soil moisture. Pots that contain plants have marginally higher (*P* = 0.090) EC than pots that contain only bare soil. In this case there doesn't appear to be any difference in standard error between whether or not plants were present, but I will still complete [variance tests](#b-testEC) to compare the effects. 
+
+```{r save EC model, echo=FALSE}
+saveRDS(ECSoil, file = "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/ECSoil.RDS")
+```
+
+
+```{r ECplot, message=FALSE, echo=FALSE}
+ECpreds <- ggemmeans(ECSoil, terms = "Soil", type = "fixed")
+
+ECpreds$x <- factor(ECpreds$x, c("C", "N", "S", "L"))
+
+# Create Plot
+
+ECplot <- ggplot() +
+  geom_pointrange(data = ECpreds,
+                  mapping = aes(x, predicted,
+                                ymin = conf.low, ymax = conf.high),
+                  size = 1.2,
+                  position = position_dodge(width = 0.2)) +
+  xlab("Soil Biota Treatment") +
+  ylab("Electrical Conductivity (EC) ") +
+  scale_x_discrete(labels = c("C" = "Abiotic \n Control", "N" = "Microbes \nOnly",
+                              "S" = "Plant \nOnly", "L" = "Plant & \n Microbes")) +
+  theme_classic(18)
+
+ggsave(ECplot, filename = "figures/ECSoil.png",
+       height = 6, width =8, units = "in")
+
+ECplot
+```
+
 
 ### Test of Variances
 <a id="b-testpH"></a>
 
 ```{r echo= F, message=F, include=F}
 # Step 1: Generate Predicted Data (remove effect of Level) 
-pred.funpH <- function(mod) {
-  model.matrix(~Soil,
-               data = expand.grid(Soil =c("L","C", "N", "S"))) %*%
-    fixef(mod)[c(1:4)]
-}
-
-pred.funEC <- function(mod) {
-  model.matrix(~plant,
-               data = expand.grid(plant =c("N", "Y"))) %*%
+pred.fun3 <- function(mod) {
+  model.matrix(~plant_YN,
+               data = expand.grid(plant_YN =c("Y", "N"))) %*%
     fixef(mod)[c(1:2)]
 }
 
@@ -216,23 +271,20 @@ cl <- makeCluster(detectCores())
 clusterEvalQ(cl, library(lme4))
 
 #create data frame of model predictions for EC and pH in each soil treatment
-ECsims <- bootMer(ECSoil, FUN = pred.funEC,
+EC3sims <- bootMer(ECSoil3, FUN = pred.fun3,
                 nsim = 1000, parallel = "snow", ncpus = detectCores(),cl = cl)
-
-pHsims <- bootMer(pHSoil, FUN = pred.funpH,
+pH3sims <- bootMer(pHSoil3, FUN = pred.fun3,
                 nsim = 1000, parallel = "snow", ncpus = detectCores(),cl = cl)
 
 stopCluster(cl = cl)
 
 #Prepare Data for Bartlett Test
-ECdraws <- data.frame(ECsims$t)
-pHdraws <- data.frame(pHsims$t)
+EC3draws <- data.frame(EC3sims$t)
+pH3draws <- data.frame(pH3sims$t)
+plant <- c("Y", "N")
 
-Soil <- c("L", "C", "N", "S")
-plant <- c("N", "Y")
-
-names(ECdraws) <- plant
-names(pHdraws) <- Soil
+names(EC3draws) <- plant
+names(pH3draws) <- plant
 ```
 
 
@@ -241,7 +293,7 @@ names(pHdraws) <- Soil
 The model predicts that both bare soil treatments (C and N) have much wider error around their estimates than the planted treatments (L and S). Below is a density plot of 1000 model simulated pH values per treatment. You can see that their distributions appear different and we will conduct a Bartlett and F-test test to assess whether they are different. 
 
 ```{r plot the density of the pH sims, echo = F}
-pHdraws2 <- pivot_longer(pHdraws, cols = L:S)
+pHdraws2 <- pivot_longer(pH3draws, cols = Y:N)
 
 densityPlot(pHdraws2$value ~ as.factor(pHdraws2$name),
             legend = list(title = "Treatment"),
@@ -253,14 +305,12 @@ densityPlot(pHdraws2$value ~ as.factor(pHdraws2$name),
 
 Do planted treatments have less variance than bare treatments for pH?
 ```{r pH mod bartlett test}
-bartlett.test(list(pHdraws$L, pHdraws$C))
+bartlett.test(list(pH3draws$Y, pH3draws$N))
 ```
 
 yes.
 ```{r pH mod F test}
-var.test(pHdraws$L, pHdraws$C)
-
-var.test(pHdraws$S, pHdraws$N)
+var.test(pH3draws$Y, pH3draws$N)
 ```
 
 
@@ -271,22 +321,22 @@ var.test(pHdraws$S, pHdraws$N)
 The model predicts that both bare soil treatments (C and N) have much wider error around their estimates than the planted treatments (L and S). For the variable EC, the best supported model only considered whether or not the pot was a bare soil control (with plant = N) or was planted with alfalfa (with plant = Y). Below is a density plot of 1000 model simulated EC values per treatment. You can see that their distributions appear different and we will conduct a Bartlett and F-test test to assess whether they are different. 
 
 ```{r plot the density of the EC sims, echo = F}
-ECdraws2 <- pivot_longer(ECdraws, cols = N:Y)
+ECdraws2 <- pivot_longer(EC3draws, cols = Y:N)
 
 densityPlot(exp(ECdraws2$value) ~ as.factor(ECdraws2$name),
-            legend = list(title = "with plant"),
+            legend = list(title = "Soil Treatment"),
             xlab = "Model Estimates of EC")
 ```
 
 Do planted treatments have less variance than bare treatments for EC?
 
 ```{r EC mod bartlett test}
-bartlett.test(list(exp(ECdraws$N), exp(ECdraws$Y)))
+bartlett.test(list(exp(EC3draws$Y), exp(EC3draws$N)))
 ```
 According to Bartlett test, the variances are different.
 
 ```{r EC mod  F-test}
-var.test(ECdraws$N, ECdraws$Y)
+var.test(EC3draws$Y, EC3draws$N)
 ```
 According to F-test the variances are different. 
 
@@ -349,9 +399,31 @@ check_model(TCSoil)
 looks good to me!
 
 ```{r TC Soil summary table, echo=F}
-TCSoil %>% tidy() %>% kable()
+TCSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
-Plants in sterile soil have lower total carbon in the pore-water than plants in live soil. Live soil is not different from any other treatment (I think it's the similar to EC and pH, the variance is very large for C and N pots, so the distributions overlap too much to be significant). In general all treatments have decreased TC at high soil moisture with the exception of "N" (no plant, no microbe) treatment, which sees increases in TC. This seems odd. Any thoughts?
+Plants in sterile soil have lower total carbon in the pore-water than plants in live soil. Live soil is not different from any other treatment (I think it's the similar to EC and pH, the variance is very large for C and N pots, so the distributions overlap too much to be significant). In general all treatments have decreased TC at high soil moisture with the exception of "N" (no plant, microbe) treatment, which sees increases in TC. This seems odd. Any thoughts?
+
+```{r TC plot, message=F, warning=FALSE, echo=FALSE}
+TCpreds <- ggemmeans(TCSoil, terms = c("Soil", "Level"), type = "fixed")
+
+TCpreds$x <- factor(TCpreds$x, c("C", "N", "S", "L"))
+
+# Create Plot
+
+TCplot <- ggplot(data = TCpreds,
+                  mapping = aes(group, predicted,
+                                group = x, color = x)) +
+  geom_point(size = 1.2) +
+  geom_line() +
+  xlab("Percent of Water Holding Capacity") +
+  ylab("Total Carbon (ppm)") +
+  scale_x_discrete(labels = c("1" = "30-50", "2" = "55-75", "3" = "80-100")) +
+  theme_classic(18)
+
+ggsave(TCplot, filename = "figures/TCSoil.png")
+
+TCplot
+```
 
 ### Effects of biomass on total carbon
 
@@ -374,7 +446,7 @@ check_model(TCSoil2)
 looks good to me!
 
 ```{r TC Soil biomass summary table, echo=F}
-TCSoil2 %>% tidy() %>% kable()
+TCSoil2 %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 Sterile and live soil plants no longer have total carbon values that are distinct from one another. Instead, with each SD increase in biomass ratio (roots are getting longer) the total carbon in the soil is decreasing. So... carbon inputs to the soil are driven by increased aboveground biomass allocation. 
 
@@ -405,7 +477,7 @@ The best model will include all soil treatments and an interaction with soil and
 
 ```{r echo = F}
 dat$Soil <- relevel(factor(dat$Soil), 
-                     ref = "L")
+                     ref = "C")
 ```
 
 ```{r IC, message = F}
@@ -423,10 +495,36 @@ check_model(ICSoil)
 ```
 
 ```{r IC summary table, echo=F}
-ICSoil %>% tidy() %>% kable()
+ICSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
-In the absence of microbes, the S and N treatments have lower IC than the treatment with microbes and plants (L). No other comparisons are significant. IC is something that we expect as a product of weathering- bicarbonates and stuff. Overall, at high soil moisture there is less IC. Perhaps this is because the pore spaces were saturated and it could have limited reaction rates. There is something interesting once more with the abiotic treatment, N (no microbes, no plants), IC increases quite a bit as soil moisture increases. This suggests that the reaction rates weren't limited under high soil moisture, but for some other reason. 
+The S and N treatments have lower IC than the treatment with microbes and plants (L). No other comparisons are significant. IC is something that we expect as a product of weathering- bicarbonates and stuff. Overall, at high soil moisture there is less IC. Perhaps this is because the pore spaces were saturated and it could have limited reaction rates. There is something interesting once more with the treatment, N ( no plants), IC increases quite a bit as soil moisture increases. This suggests that the reaction rates weren't limited under high soil moisture, but for some other reason. 
+
+```{r IC plot2, message=F, echo=FALSE}
+ICpreds <- ggemmeans(ICSoil, terms = "Soil", type = "fixed")
+
+ICpreds$x <- factor(ICpreds$x, c("C", "N", "S", "L"))
+
+# Create Plot
+
+ICplot <- ggplot() +
+  geom_pointrange(data = ICpreds,
+                  mapping = aes(x, predicted,
+                                ymin = conf.low, ymax = conf.high),
+                  size = 1.2,
+                  position = position_dodge(width = 0.2)) +
+  xlab("Soil Biota Treatment") +
+  ylab("Inorganic Carbon (ppm)") +
+  scale_x_discrete(labels = c("C" = "Abiotic \n Control", "N" = "Microbes \nOnly",
+                              "S" = "Plant \nOnly", "L" = "Plant & \n Microbes")) +
+  theme_classic(18)
+
+ggsave(ICplot, filename = "figures/ICSoil.png",
+       height = 6, width =8, units = "in")
+
+ICplot
+```
+
 
 ```{r Simulate data from IC model, echo= F, message=F, include=F}
 # Step 1: Generate Predicted Data (remove effect of Level) 
@@ -482,7 +580,7 @@ check_model(ICSoil2)
 ```
 
 ```{r IC biomass summary table, echo=F}
-ICSoil2 %>% tidy() %>% kable()
+ICSoil2 %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 Plants + microbes (L) have higher inorganic carbon then just plants alone (S). IC decreases at the highest soil moisture (why?). It seems that as plants get larger, they are associated with higher IC, but this relationship is marginal. 
@@ -515,12 +613,12 @@ The best model will combine N and C treatments as a single factor (B = bare soil
 
 ```{r echo = F}
 dat$soil_LSB <- relevel(factor(dat$soil_LSB), 
-                     ref = "L")
+                     ref = "C")
 ```
 
 ```{r OC, message = F}
 
-OCSoil <- lmer(log(NPOC) ~ soil_LSB + Level + scale(Dmass_tot) + batch_NPOC +
+OCSoil <- lmer(log(NPOC) ~ Soil* Level + scale(Dmass_tot) + batch_NPOC +
                  (1|Geno) + (1|dis_table) + (1|table),
                 data = dat)
 ```
@@ -533,7 +631,7 @@ check_model(OCSoil)
 ```
 
 ```{r OC summary table, echo=F}
-OCSoil %>% tidy() %>% kable()
+OCSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 Soil treatment has absolutely no effect on organic carbon. Similar to other analyses, NPOC is lower at the highest soil moisture. This is maybe not surprising because organic carbon is carbon that would not be present/produced in the abiotic treatment (N, as part of B), and would be produced and immediately used in the biotic treatments.
@@ -553,8 +651,6 @@ contrasts(dat$batch_NPOC) <- contr.sum(3)
 OCSoil2 <- lmer(log(NPOC) ~ Soil + Level + scale(Dmass_tot) + scale(totBM) + batch_NPOC + 
                  (1|Geno) + (1|dis_table) + (1|table),
                 data = dat)
-
-anova(OCSoil2)
 ```
 
 ```{r OC biomass diagnostics, echo=F}
@@ -563,7 +659,7 @@ check_model(OCSoil2)
 ```
 
 ```{r OC biomass summary table, echo=F}
-OCSoil2 %>% tidy() %>% kable()
+OCSoil2 %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 The same pattern as before. Also, biomass has no relationship with NPOC. Again, I'm thinking that this is because the NPOC being produced is being used pretty quickly, so we don't see relationships in the pore water.
@@ -615,9 +711,13 @@ compare_performance(NO3Soil3, NO3Soil3b, rank = T)
 
 The best model only considers whether or not there was a plant in the pot, but no interaction with soil moisture. Some of the very low readings for Nitrate were reducing model performance, so they have been removed. 
 
+```{r echo = F}
+dat$Soil <- relevel(factor(dat$Soil), 
+                     ref = "C")
+```
 
 ```{r Nitrate Soil Model, message=F}
-NO3Soil <- lmer(log(mu_NO3) ~ plant_YN + Level + scale(Dmass_tot) +
+NO3Soil <- lmer(log(mu_NO3) ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_NO3 >= quantile(mu_NO3, na.rm = T, 0.1)))
 ```
@@ -630,10 +730,43 @@ check_model(NO3Soil)
 
 
 ```{r Nitrate Model Summary, echo=FALSE}
-NO3Soil %>% tidy() %>% kable()
+NO3Soil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 There is absolutely nothing going on here. Neither soil treatment nor soil moisture affect levels of porewater nitrate. I need to go back into the raw data and see if there is anyway I can group the data into batches (If I can see they have a time/date stamp). That may correct for some variation in the data. 
+
+```{r echo=FALSE}
+saveRDS(NO3Soil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/NO3Soil.RDS")
+```
+
+
+
+```{r IC plot, message=F, echo=FALSE}
+NO3preds <- ggemmeans(NO3Soil, terms = "Soil", type = "fixed")
+
+NO3preds$x <- factor(NO3preds$x, c("C", "N", "S", "L"))
+
+# Create Plot
+
+NO3plot <- ggplot() +
+  geom_pointrange(data = NO3preds,
+                  mapping = aes(x, predicted,
+                                ymin = conf.low, ymax = conf.high),
+                  size = 1.2,
+                  position = position_dodge(width = 0.2)) +
+  xlab("Soil Biota Treatment") +
+  ylab("Nitrate (mg/L)") +
+  scale_x_discrete(labels = c("C" = "Abiotic \n Control", "N" = "Microbes \nOnly",
+                              "S" = "Plant \nOnly", "L" = "Plant & \n Microbes")) +
+  theme_classic(18)
+
+ggsave(NO3plot, filename = "figures/NO3Soil.png",
+       height = 6, width =8, units = "in")
+
+NO3plot
+```
+
+
 
 ### Nitrite
 
@@ -673,7 +806,7 @@ dat$soil_LSB <- relevel(factor(dat$soil_LSB),
 
 
 ```{r Ammonium Soil Model, message=F}
-NH4Soil <- lmer(log(mu_NH4) ~ soil_LSB * Level + scale(Dmass_tot) +
+NH4Soil <- lmer(log(mu_NH4) ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table)+ (1|batch_anion),
                 data = dat)
 ```
@@ -686,7 +819,7 @@ check_model(NH4Soil)
 
 
 ```{r Ammonium Model Summary, echo=FALSE}
-NH4Soil %>% tidy() %>% kable()
+NH4Soil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 There is very little happening with ammonium. We see that for the L treatment (plant and microbes), ammonium decreases at the highest soil moisture, and that for the S treatment (plant but no microbes) ammonium increases at the highest soil moisture. So plants, microbes, and soil moisture interact to affect the amount of ammonium in the pore water. 
@@ -740,10 +873,38 @@ check_model(NaSoil)
 
 
 ```{r Sodium Model Summary, echo=FALSE}
-NaSoil %>% tidy() %>% kable()
+NaSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 Nothing really happening here except for a relationship between sodium and soil moisture. Sodium decreases at the highest soil moisture treatment, except for N in which case it actually increases quite a bit. I think there is something going on between biota and many of the bioavailable substances in the porewater. We see a similar relationship for organic carbon.
+
+```{r Na plot, message=F, echo=FALSE}
+Napreds <- ggemmeans(NaSoil, terms = c("Soil", "Level"), type = "fixed")
+
+Napreds$x <- factor(Napreds$x, c("C", "N", "S", "L"))
+
+t <- data.frame(cbind(group = c("1", "2", "3"), Level = c("Low Moisture", "Medium Moisture", "High Moisture")))
+
+t$Level <- factor(t$Level, levels = c("Low Moisture", "Medium Moisture", "High Moisture"))
+
+Napreds <- left_join(Napreds, t, by = "group")
+
+# Create Plot
+
+Naplot <- ggplot(data = Napreds,
+                  mapping = aes(group, predicted,
+                                group = x, color = x)) +
+  geom_point(size = 1.2) +
+  geom_line() +
+  xlab("Percent of Water Holding Capacity") +
+  ylab("Sodium (mg/L)") +
+  scale_x_discrete(labels = c("1" = "30-50", "2" = "55-75", "3" = "80-100")) +
+  theme_classic(18)
+
+ggsave(Naplot, filename = "figures/NaSoil.png")
+
+Naplot
+```
 
 ### Calcium
 
@@ -774,7 +935,7 @@ The best model only evaluates bare vs planted, and does not include an interacti
 
 Initial diagnostics showed that some of the data were extremely low compared to the rest of the data and causing problems with model fit. 
 ```{r Calcium Soil Model, message=F}
-CaSoil <- lmer(log(mu_Ca) ~ plant_YN + Level + scale(Dmass_tot) +
+CaSoil <- lmer(log(mu_Ca) ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
                 data = filter(dat, mu_Ca >= quantile(mu_Ca, na.rm = T, 0.2)))
 ```
@@ -787,7 +948,7 @@ check_model(CaSoil)
 
 
 ```{r Calcium Model Summary, echo=FALSE}
-CaSoil %>% tidy() %>% kable()
+CaSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 Nothing affects the amount of Calcium in the soil.
@@ -821,7 +982,10 @@ The best model only evaluates bare vs live or sterile planted, and does not incl
 
 
 ```{r Magnesium Soil Model, message=F}
-MgSoil <- lmer(log(mu_Mg) ~ Soil + Level + scale(Dmass_tot) +
+dat$Soil <- relevel(factor(dat$Soil),
+                    ref = "C")
+
+MgSoil <- lmer(log(mu_Mg) ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
                 data = dat)
 ```
@@ -834,12 +998,35 @@ check_model(MgSoil)
 
 
 ```{r Magnesium Model Summary, echo=FALSE}
-MgSoil %>% tidy() %>% kable()
+MgSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
-Magnesium does reveal a pattern. I also reverted the model to a form that isn't the absolute best because if I want to use this model in a manuscript, I feel like the "LSB" treatment designation is a bit confusing. 
-
 Moisture has no effect on porewater magnesium, however there seems to be an interaction between plants and microbes because the "L" treatment has higher magnesium than the S (plants, no microbes) and C (microbes, no plants) treatment. So magnesium presents a situation in which both parties are necessary to elevate its concentration. Through which processes is magnesium created? Will there be specific plant-associated microbes that we should be on the lookout for in the metaG data?
+
+```{r MG plot, message=F, echo=FALSE}
+Mgpreds <- ggemmeans(MgSoil, terms = "Soil", type = "fixed")
+
+Mgpreds$x <- factor(Mgpreds$x, c("C", "N", "S", "L"))
+
+# Create Plot
+
+Mgplot <- ggplot() +
+  geom_pointrange(data = Mgpreds,
+                  mapping = aes(x, predicted,
+                                ymin = conf.low, ymax = conf.high),
+                  size = 1.2,
+                  position = position_dodge(width = 0.2)) +
+  xlab("Soil Biota Treatment") +
+  ylab("Magnesium (mg/L)") +
+  scale_x_discrete(labels = c("C" = "Abiotic \n Control", "N" = "Microbes \nOnly",
+                              "S" = "Plant \nOnly", "L" = "Plant & \n Microbes")) +
+  theme_classic(18)
+
+ggsave(Mgplot, filename = "figures/MgSoil.png",
+       height = 6, width =8, units = "in")
+
+Mgplot
+```
 
 ### Potassium
 
@@ -892,20 +1079,69 @@ check_model(KSoil)
 
 
 ```{r K Model Summary, echo=FALSE}
-KSoil %>% tidy() %>% kable()
+KSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 We once again see that trend where potassium seems to peak at intermediate soil moisture with the exception of the abiotic treatment, N, in which potassium increases as soil moisture increases.
 
 The only difference between treatments is that N seems to have lower potassium than S. S is very similar to L and C, and due to their variation, they are not different than S. I don't think there's much to glean from this model, other than the persistent trend that N pots peak at high soil moisture, while the other pots peak at intermediate soil moisture for many variables. 
 
+```{r echo=FALSE}
+saveRDS(KSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/KSoil.RDS")
+```
+
+
+```{r K plot, message=F, echo=FALSE}
+Kpreds <- ggemmeans(KSoil, terms = c("Soil", "Level" ), type = "fixed")
+
+# Create Plot
+
+Kplot <- ggplot() +
+  geom_pointrange(data = Kpreds,
+                  mapping = aes(x, predicted,
+                                ymin = conf.low, ymax = conf.high),
+                  size = 1.2,
+                  position = position_dodge(width = 0.2)) +
+  facet_wrap(~group,nrow = 3, ncol = 1) + 
+  xlab("Soil Biota Treatment") +
+  ylab("Potassium (mg/L)") +
+  scale_x_discrete(labels = c("C" = "Abiotic \n Control", "N" = "Microbes \nOnly",
+                              "S" = "Plant \nOnly", "L" = "Plant & \n Microbes")) +
+  theme_classic(18)
+
+ggsave(Kplot, filename = "figures/KSoil.png")
+
+Kplot
+```
+
+## Lithium
+
+```{r echo = F}
+dat$Soil <- relevel(factor(dat$Soil), 
+                     ref = "C")
+```
+
+```{r Lithium Soil Model, message=F}
+LiSoil <- lmer(mu_Li ~ Soil * Level + scale(Dmass_tot) +
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
+                data = filter(dat, mu_Li < 1.5))
+```
+
+```{r Lithium Diagnostics, echo=FALSE, fig.dim=c(6,8)}
+check_model(LiSoil)
+```
+
+
+```{r Li Model Summary, echo=FALSE}
+LiSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
+```
 <a id="summary-three"></a>
 
 ## Cations Summary
 
 Overall the cations show very few trends. 
 
-The most robust pattern is that Sodium and Potassium (and Inorganic Carbon) concentrations peak at intermediate soil moisture, with the exception of the "N" treatment (abiotic; no microbes, no plants) where concentrations increase as soil moisture increases. Does this tell us something about how biota affect the rates that these things are produced? 
+The most robust pattern is that Sodium and Potassium (and Inorganic Carbon) concentrations peak at intermediate soil moisture, with the exception of the "N" treatment (microbes, no plants) where concentrations increase as soil moisture increases. Does this tell us something about how biota affect the rates that these things are produced? 
 
 There may be an interaction between plants and microbes regarding the production of Magnesium. We see that Magnesium levels are higher in the L treatment compared to all other treatments. What is the chemical reaction or the biochemical pathways that lead to the production of Magnesium? Are there certain plant-associated microbes or metabolites that we should be looking for that are more common in the "L" treatment compared to other treatments?
 
@@ -952,10 +1188,11 @@ These really high values of F are all from the same two batches; 1 & 2. I think 
 ```{r echo = F}
 dat$soil_LSB <- relevel(factor(dat$soil_LSB), 
                      ref = "S")
+
 ```
 
 ```{r Fluoride Soil Model, message=F}
-FSoil <- lmer(log(mu_F) ~ soil_LSB + Level + scale(Dmass_tot) +
+FSoil <- lmer(log(mu_F) ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_F <= quantile(mu_F, na.rm = T, 0.85)))
 ```
@@ -968,10 +1205,34 @@ check_model(FSoil)
 
 
 ```{r F Model Summary, echo=FALSE}
-FSoil %>% tidy() %>% kable()
+FSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 Fluoride is responsive to soil moisture only. It is stable from low to medium soil moisture and decreases at high soil moisture. Neither plants nor microbes affect Fluoride concentrations in the soil. 
+
+```{r F plot, message=F, echo=FALSE}
+Fpreds <- ggemmeans(FSoil, terms = c("Level" ), type = "fixed")
+
+# Create Plot
+
+Fplot <- ggplot() +
+  geom_pointrange(data = (Fpreds),
+                  mapping = aes(x, predicted,
+                                ymin = conf.low, ymax = conf.high),
+                  size = 1.2,
+                  position = position_dodge(width = 0.2)) +
+  xlab("Percent of Water Holding Capacity") +
+  ylab("Fluoride (mg/L)") +
+  scale_x_discrete(labels = c("1" = "30-50", "2" = "55-75",
+                              "3" = "80-100")) +
+  theme_classic(18)
+
+ggsave(Fplot, filename = "figures/FSoil.png",
+       height = 6, width =8, units = "in")
+
+Fplot
+```
+
 
 ### Bromide
 
@@ -1005,7 +1266,7 @@ The best model considers only plant or no plant and has no interaction with soil
 
 
 ```{r Br Soil Model, message=F}
-BrSoil <- lmer(mu_Br ~ plant_YN + Level + scale(Dmass_tot) +
+BrSoil <- lmer(mu_Br ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_Br <= quantile(mu_Br, na.rm = T, 0.9)))
 ```
@@ -1018,7 +1279,7 @@ check_model(BrSoil)
 
 
 ```{r Br Model Summary, echo=FALSE}
-BrSoil %>% tidy() %>% kable()
+BrSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 Absolutely nothing affects the concentration of Bromide.
@@ -1055,7 +1316,7 @@ The best model considers only plant or no plant and has no interaction with soil
 
 
 ```{r Cl Soil Model, message=F}
-ClSoil <- lmer(mu_Cl ~ plant_YN + Level + scale(Dmass_tot) +
+ClSoil <- lmer(mu_Cl ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_Cl <= quantile(mu_Cl, na.rm = T, 0.95)))
 ```
@@ -1068,7 +1329,7 @@ check_model(ClSoil)
 
 
 ```{r Cl Model Summary, echo=FALSE}
-ClSoil %>% tidy() %>% kable()
+ClSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 Chloride is sensitive to soil moisture only and peaks at intermediate soil moisture. 
 
@@ -1107,14 +1368,13 @@ The best model includes all soil treatments with an interaction with level. Ther
 
 ```{r echo = F}
 dat$Soil <- relevel(factor(dat$Soil), 
-                     ref = "N")
+                     ref = "C")
 ```
 
 ```{r PO4 Soil Model, message=F}
-PO4Soil <- lmer(mu_PO4 ~  Soil + Level + scale(Dmass_tot) +
+PO4Soil <- lmer(mu_PO4 ~  Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_PO4 <= 25))
-summary(PO4Soil)
 ```
 
 *Check Model Diagnostics*
@@ -1125,12 +1385,37 @@ check_model(PO4Soil)
 
 
 ```{r PO4 Model Summary, echo=FALSE}
-PO4Soil %>% tidy() %>% kable()
+PO4Soil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
-The abiotic treatment, N, has the highest phosphate levels, and phosphate only increases as soil moisture increases. With the addition of biota, we see a decrease in phosphate. The presence of plants seems to have a stronger effect on the draw down (use) of phosphate than microbes alone. We can see that the S and L treatments are significantly lower than N, whle the C treatment is only marginally lower. 
+The microbe only treatment, N, has the highest phosphate levels, and phosphate only increases as soil moisture increases. With the addition of biota, we see a decrease in phosphate. The presence of plants seems to have a stronger effect on the draw down (use) of phosphate than microbes alone. We can see that the S and L treatments are significantly lower than N, whle the C treatment is only marginally lower. 
 
-You will notice the absence of the C treatment at higher soil moisture and that is because none of the samples produced values. There are also very few N samples that produced readings of PO4 in the data, which makes me suspicious of this model. Take this relationship with a grain of salt. I am much more likely to use a model looking at variation among genotypes because we have plenty of readings from the planted treatments. 
+```{r PO4 plot, message=F, echo=FALSE}
+PO4preds <- ggemmeans(PO4Soil, terms = "Soil", type = "fixed")
+
+PO4preds$x <- factor(PO4preds$x, c("C", "N", "S", "L"))
+
+# Create Plot
+
+PO4plot <- ggplot() +
+  geom_pointrange(data = PO4preds,
+                  mapping = aes(x, predicted,
+                                ymin = conf.low, ymax = conf.high),
+                  size = 1.2,
+                  position = position_dodge(width = 0.2)) +
+  xlab("Soil Biota Treatment") +
+  ylab("Phosphate (mg/L)") +
+  scale_x_discrete(labels = c("C" = "Abiotic \n Control", "N" = "Microbes \nOnly",
+                              "S" = "Plant \nOnly", "L" = "Plant & \n Microbes")) +
+  theme_classic(18)
+
+ggsave(PO4plot, filename = "figures/PO4Soil.png",
+       height = 6, width =8, units = "in")
+
+PO4plot
+```
+
+
 
 ### Sulfate
 
@@ -1166,10 +1451,9 @@ compare_performance(SO4Soil3, SO4Soil3b, rank = T)
 The best model only compares whether there was a plant and has no interaction
 
 ```{r SO4 Soil Model, message=F}
-SO4Soil <- lmer(mu_SO4 ~ plant_YN + Level + scale(Dmass_tot) +
+SO4Soil <- lmer(mu_SO4 ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_SO4 <= 4000))
-summary(SO4Soil)
 ```
 
 *Check Model Diagnostics*
@@ -1181,10 +1465,33 @@ check_model(SO4Soil)
 This is the best I can do with model fit. I don't love the two peaks. 
 
 ```{r SO4 Model Summary, echo=FALSE}
-SO4Soil %>% tidy() %>% kable()
+SO4Soil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 Only soil moisture affects sulfate concentrations. Concentrations increase between low and medium treatments and decrease between medium and high concentrations. 
+
+```{r SO4 plot, message=F, echo=FALSE}
+SO4preds <- ggemmeans(SO4Soil, terms = "Level", type = "fixed")
+
+# Create Plot
+
+SO4plot <- ggplot() +
+  geom_pointrange(data = SO4preds,
+                  mapping = aes(x, predicted,
+                                ymin = conf.low, ymax = conf.high),
+                  size = 1.2,
+                  position = position_dodge(width = 0.2)) +
+  xlab("Percent of Water Holding Capacity") +
+  ylab("Sulfate (mg/L)") +
+  scale_x_discrete(labels = c("1" = "30-50", "2" = "55-75",
+                              "3" = "80-100")) +
+  theme_classic(18)
+
+ggsave(SO4plot, filename = "figures/SO4Soil.png",
+       height = 6, width =8, units = "in")
+
+SO4plot
+```
 
 <a id="summary-four"></a>
 

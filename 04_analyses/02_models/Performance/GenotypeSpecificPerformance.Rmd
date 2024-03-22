@@ -17,6 +17,8 @@ library(broom.mixed) #model diagnostics
 library(performance) #model diagnostics
 library(rmarkdown) #to render the document
 library(knitr) # for pretty markdown tables
+library(stats)
+library(parallel)
 
 dat <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/AllPerformanceGeochem.csv")
 census <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/FullCensusTimeSeries.csv")
@@ -149,6 +151,48 @@ Some genotypes show variation in how they interact with soil microbes. CRI (1) a
 
 saveRDS(BMGeno, file = "04_analyses/02_models/Output/BiomassGS.RDS")
 
+```
+
+
+
+```{r GS Total Biomass plot,  echo=FALSE}
+BMGeno.fun <- function(.){
+  s.dat <- expand.grid(Geno = c("CRI","G15","INA","MOC","TAS","VIR","YON", "K19"),
+                         Soil = "S",
+                         Level = "1")
+  l.dat <- expand.grid(Geno = c("CRI","G15","INA","MOC","TAS","VIR","YON", "K19"),
+                         Soil = "L",
+                         Level = "1")
+  s.est <- predict(., newdata = s.dat, re.form = ~0)
+  l.est <- predict(., newdata = l.dat, re.form = ~0)
+  
+  l.est - s.est
+}
+
+#Create cluster within computer to bootstrap in parallel
+cl <- makeCluster(detectCores()) 
+clusterEvalQ(cl, library(lme4))
+##EC plot and Bartlett ---------------------------------------------------------
+BMGBoot <- bootMer(BMGeno, FUN = BMGeno.fun,
+                nsim = 1000, parallel = "snow", ncpus = detectCores(),cl = cl)
+
+stopCluster(cl = cl)
+
+BMGenoresponse <- data.frame(preds =BMGeno.fun(BMGeno),
+                  confint(BMGBoot),
+                  Geno = c("CRI","G15","INA","MOC","TAS","VIR","YON", "K19") )
+names(BMGenoresponse)[2:3] <- c("lwr", "upr")
+
+fig <- ggplot(BMGenoresponse, aes(Geno, (preds/10))) +
+  geom_pointrange(mapping = aes(ymin = (lwr/10), ymax = (upr/10))) + 
+  labs(x = "Genotype",
+       y = "Microbe Effect on Biomass") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  theme_classic(18) 
+
+fig
+
+ggsave(plot = fig, filename = "~/Desktop/Alfalfa-Terraformation-GH/Task2A/figures/GSBMMicrobeEffects.png")
 ```
 
 ## Aboveground Biomass

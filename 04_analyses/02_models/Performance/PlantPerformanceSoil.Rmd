@@ -9,6 +9,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+
 rm(list =ls())
 
 library(tidyverse) #clean data manipulation
@@ -19,6 +20,7 @@ library(broom.mixed) #model diagnostics
 library(performance) #model diagnostics
 library(rmarkdown) #to render the document
 library(knitr) # for pretty markdown tables
+library(ggeffects) # for direct easy model prediction plotting
 
 dat <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/AllPerformanceGeochem.csv") 
 census <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/FullCensusTimeSeries.csv")
@@ -30,6 +32,7 @@ BMdat <- dat %>%
            Soil != "P") %>%
   #Only living plants have data
   filter(status == 1)
+
 
 ```
 
@@ -102,7 +105,7 @@ check_model(BMSoil)
 The model looks good to me. Now time to review the model summary.
 
 ```{r BM Summary, echo = F}
-BMSoil %>% tidy() %>% kable()
+BMSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 We can see that plants in the sterile soil treatment had greater biomass than plants in the live soil treatment. We also see that moisture affects biomass. Regardless of soil microbe exposure, plants had greater biomass when comparing moisture treatments 1 (30-50% WHC) and 2 (55-75% WHC), but additional soil moisture did not further affect plant growth (levels 2 vs 3; 80-100% WHC).
@@ -113,6 +116,34 @@ saveRDS(BMSoil, file = "04_analyses/02_models/Output/Biomass.RDS")
 
 ```
 
+```{r Total Biomass plot, message=FALSE, echo=FALSE}
+
+BMpreds <- ggemmeans(BMSoil, c("Level", "Soil"), type = "fixed")
+
+# Create Plot
+
+BMplot <- ggplot() +
+  geom_pointrange(data = BMpreds,
+                  mapping = aes(x, predicted,
+                                ymin = conf.low, ymax = conf.high,
+                                group = group, col = group),
+                  size = 1.2,
+                  position = position_dodge(width = 0.2)) +
+  xlab("Percent of Water Holding Capacity") +
+  ylab("Total Dry Biomass (g)") +
+  scale_x_discrete(labels = c("1" = "30-50", "2" = "55-75", "3" = "80-100")) +
+  scale_color_viridis_d("",
+                        labels = c("L" = "Live Soil", "S" = "Sterile Soil"),
+                        begin = 0.2,
+                        end = 0.8) +
+  theme_classic(18)
+
+ggsave(BMplot, filename = "figures/Biomass.png",
+       height = 6, width =8, units = "in")
+
+BMplot
+
+```
 
 ## Aboveground Biomass
 
@@ -130,7 +161,7 @@ check_model(BMSoilA)
 The model looks good to me. Now time to review the model summary.
 
 ```{r BMA Summary, echo = F}
-BMSoilA %>% tidy() %>% kable()
+BMSoilA %>% tidy()%>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 The same pattern as total biomass. We can see that plants in the sterile soil treatment had greater aboveground biomass than plants in the live soil treatment. We also see that moisture affects aboveground biomass. Regardless of soil microbe exposure, plants had greater aboveground biomass when comparing moisture treatments 1 (30-50% WHC) and 2 (55-75% WHC), but additional soil moisture did not further affect plant growth (levels 2 vs 3; 80-100% WHC).
@@ -151,7 +182,7 @@ check_model(BMSoilB)
 The model looks good to me. Now time to review the model summary.
 
 ```{r BMB Summary, echo = F}
-BMSoilB %>% tidy() %>% kable()
+BMSoilB %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 We see the exact same pattern in belowground biomass as we saw in aboveground biomass. Plants in sterile soil had larger roots than for plants exposed to microbes. We see improvements in biomass between low and intermediate soil moisture, but that further increases to high soil moisture do not provide additional improvements to plant growth. There is no interaction between soil inoculation and growth response to soil moisture, so both live and sterile plants have the same growth relationship to soil moisture. 
@@ -176,15 +207,82 @@ check_model(RMF)
 
 
 ```{r RMF Summary, echo = F}
-RMF %>% tidy() %>% kable()
+RMF %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 As is typical (especially for alfalfa), a larger proportion of total biomass is allocated to belowground biomass than aboveground biomass. Overall, as plants become larger (total biomass increases), there is increased root allocation compared to shoot allocation. Plants in sterile soil once again differ from plants in live soil; they have greater belowground biomass allocation than do live soil plants. So, microbes affect biomass allocation patterns. Soil moisture does not affect allocation patterns in either live or sterile soil plants. 
 
 ```{r BM ratio Save, echo=FALSE}
 
-saveRDS(RMF, file = "04_analyses/02_models/Output/RMF.RDS")
+saveRDS(RMF, file = "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/RMF.RDS")
 
+```
+
+```{r RMF plot, message=FALSE, echo=FALSE}
+
+RMFpreds <- ggemmeans(RMF, "Soil", type = "fixed")
+
+# Create Plot
+
+RMFplot <- ggplot() +
+  geom_pointrange(data = RMFpreds,
+                  mapping = aes(x, predicted,
+                                ymin = conf.low, ymax = conf.high),
+                  size = 1.2,
+                  position = position_dodge(width = 0.2)) +
+  xlab("Soil Microbe Treatment") +
+  ylab("Root Mass Fraction") +
+  scale_x_discrete(labels = c("L" = "Live Soil", "S" = "Sterile Soil")) +
+  theme_classic(18)
+
+ggsave(RMFplot, filename = "figures/RMF.png",
+       height = 6, width =8, units = "in")
+
+RMFplot
+
+```
+
+```{r Shoot Mass Fraction, message = F}
+
+SMF <- lmer(massA/totBM ~ log(totBM) + Soil * Level + (1|Geno) + (1|table), 
+                data = BMdat)
+
+```
+
+
+*Check the model diagnostics*
+
+```{r SMF Diagnostics, echo=F, fig.dim= c(6,8)}
+check_model(SMF)
+```
+
+```{r SMF Summary, echo = F}
+SMF %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
+```
+
+Plants in sterile soil allocate less biomass to their shoots than plants in Live soil. This makes sense because if there is a lower RMF for live plants than sterile plants there must be a higher SMF for live plants than sterile plants. 
+
+```{r SMF plot, message=FALSE, echo=FALSE}
+
+SMFpreds <- ggemmeans(SMF, "Soil" , type = "fixed")
+
+# Create Plot
+
+SMFplot <- ggplot() +
+  geom_pointrange(data = SMFpreds,
+                  mapping = aes(x, predicted,
+                                ymin = conf.low, ymax = conf.high),
+                  size = 1.2,
+                  position = position_dodge(width = 0.2)) +
+  xlab("Soil Microbe Treatment") +
+  ylab("Shoot Mass Fraction") +
+  scale_x_discrete(labels = c("L" = "Live Soil", "S" = "Sterile Soil")) +
+  theme_classic(18)
+
+ggsave(SMFplot, filename = "figures/SMF.png",
+       height = 6, width =8, units = "in")
+
+SMFplot
 
 ```
 
@@ -202,8 +300,6 @@ We can see that microbes and soil moisture influenced plant growth. In general, 
 
 Jump to [summary](#summary-two)
 
-*note*: RGR is a very messy metric for this experiment in my opinion. To calculate RGR you need to measure plant height change throughout the experiment. The alfalfa had very challenging growth patterns. Some plants did actually grow their stems, giving height change a reliable measure, but others did not grow their stems and instead had very long petioles (leaf stems), so we had to measure petiole otherwise a plant would have a height of 0.1 mm for the duration of the experiment. I do not think the RGR results can be used in a publication, so these are presented for internal reporting only. 
-
 ## RGR at the beginning of the experiment
 ```{r RGR early, message = F}
 RGR1 <- lmer(RGR_d ~ Soil*Level +
@@ -218,7 +314,7 @@ check_model(RGR1)
 ```
 
 ```{r RGR1 Summary, echo = F}
-RGR1 %>% tidy() %>% kable()
+RGR1 %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 Plants in sterile soil grow faster than plants in live soil. There is a slight interaction between microbes and soil moisture here: In the earliest days of the experiment, plants in live soil grew faster as soil moisture increases, but this is not true for plants in sterile soil.  
@@ -231,7 +327,8 @@ But we also know that this pattern doesn't hold across the entire experiment...
 RGR2 <- lmer(RGR_d ~ Soil + Level +
                   HtPrevCensus +
                   (1|Geno) + (1|table) + (1|pot) + (1|CensusNo),
-                data = filter(census, CensusNo != 1 & status == 1))
+                data = filter(census, CensusNo != 1 & status == 1 &
+                                RGR_d < 0.03 & RGR_d > -0.02))
 ```
 
 *check the model diagnostics*
@@ -240,7 +337,7 @@ check_model(RGR2)
 ```
 
 ```{r RGR2 Summary, echo = F}
-RGR2 %>% tidy() %>% kable()
+RGR2 %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 Plants in sterile soil grew faster than plants in live soil throughout the experiment. Plants grew faster with increasing soil moisture. Prior model iterations showed that an interaction between microbes and soil moisture did not improve the model, so an additive model only provides the best fit for the data.
@@ -249,6 +346,34 @@ Plants in sterile soil grew faster than plants in live soil throughout the exper
 
 saveRDS(RGR2, file = "04_analyses/02_models/Output/RGR.RDS")
 
+```
+
+```{r RGR Figure, message=FALSE, echo=FALSE}
+
+rgrResult <- ggemmeans(RGR2, c("Level", "Soil"), type = "fixed")
+
+# Create Plot
+
+RGRplot <- ggplot() +
+  geom_pointrange(data = rgrResult,
+                  mapping = aes(x, predicted,
+                                ymin = conf.low, ymax = conf.high,
+                                group = group, col = group),
+                  size = 1.2,
+                  position = position_dodge(width = 0.2)) +
+  xlab("Percent of Water Holding Capacity") +
+  ylab("Relative Growth Rate (mm/mm/day)") +
+  scale_x_discrete(labels = c("1" = "30-50", "2" = "55-75", "3" = "80-100")) +
+  scale_color_viridis_d("",
+                        labels = c("L" = "Live Soil", "S" = "Sterile Soil"),
+                        begin = 0.2,
+                        end = 0.8) +
+  theme_classic(18)
+
+ggsave(RGRplot, filename = "figures/RGR.png",
+       height = 6, width =8, units = "in")
+
+RGRplot
 ```
 
 <a id="summary-two"></a>
@@ -296,7 +421,7 @@ Mort1 <- glmer(Status ~ Soil * Level  + scale(HtPrevCensus) +
 **To Do:** Model diagnostics... check old code from prior studies.
 
 ```{r Mort1 Summary, echo = F}
-Mort1 %>% tidy() %>% kable()
+Mort1 %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 Throughout the duration of the experiment soil microbes increased a plant's probability of mortality. Increasing soil moisture reduced the probability of mortality, and this was especially true for plants in sterile soil (although the effect is marginal, *p* = 0.08). 
@@ -304,6 +429,32 @@ Throughout the duration of the experiment soil microbes increased a plant's prob
 ```{r Mort Save, echo=FALSE}
 
 saveRDS(Mort1, file = "04_analyses/02_models/Output/Mortality.RDS")
+
+```
+
+```{r Mort Figure, message=FALSE, echo = FALSE}
+MortPreds <- ggpredict(Mort1, c("Level", "Soil"))
+
+Mortplot <- ggplot() +
+  geom_pointrange(data = MortPreds,
+                  mapping = aes(x, predicted,
+                                ymin = conf.low, ymax = conf.high,
+                                group = group, col = group),
+                  size = 1.2,
+                  position = position_dodge(width = 0.2)) +
+  xlab("Percent of Water Holding Capacity") +
+  ylab("Probability of Mortality") +
+  scale_x_discrete(labels = c("1" = "30-50", "2" = "55-75", "3" = "80-100")) +
+  scale_color_viridis_d("",
+                        labels = c("L" = "Live Soil", "S" = "Sterile Soil"),
+                        begin = 0.2,
+                        end = 0.8) +
+  theme_classic(15)
+
+ggsave(Mortplot, filename = "figures/Mort.png",
+       height = 6, width =8, units = "in")
+
+Mortplot
 
 ```
 
@@ -321,11 +472,43 @@ Surv <- glmer(status ~ Soil + Level + (1|Geno) + (1|table),
 
 *note:* there is no interaction between soil and level, so the best model is additive only. 
 
+```{r Surv mod save, echo=FALSE}
+
+saveRDS(Surv, file = "04_analyses/02_models/Output/Surv.RDS")
+```
+
+
 ```{r Surv Summary, echo = F}
-Surv %>% tidy() %>% kable()
+Surv %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 Plants in sterile soil are more likely to survive to the end of the experiment than plants in live soil (77% vs 34%). Survival increases between low and intermediate soil moisture, but does not change between intermediate and high soil moisture, so plants are only water limited in a way that impacts survival at the lowest soil moisture.  
+
+```{r Surv Figure, message=FALSE, echo = FALSE}
+SurvPreds <- ggpredict(Surv, c("Level", "Soil"))
+
+Survplot <- ggplot() +
+  geom_pointrange(data = SurvPreds,
+                  mapping = aes(x, predicted,
+                                ymin = conf.low, ymax = conf.high,
+                                group = group, col = group),
+                  size = 1.2,
+                  position = position_dodge(width = 0.2)) +
+  xlab("Percent of Water Holding Capacity") +
+  ylab("Probability of Survival") +
+  scale_x_discrete(labels = c("1" = "30-50", "2" = "55-75", "3" = "80-100")) +
+  scale_color_viridis_d("",
+                        labels = c("L" = "Live Soil", "S" = "Sterile Soil"),
+                        begin = 0.2,
+                        end = 0.8) +
+  theme_classic(18)
+
+ggsave(Survplot, filename = "figures/Surv.png",
+      height = 6, width =8, units = "in")
+
+Survplot
+
+```
 
 <a id="summary-three"></a>
 
@@ -355,8 +538,10 @@ PSN <- lmer(log1p(std_PSN) ~ Soil + Level + (1|Geno) + (1|table),
 ```{r PSN diagnostics, echo = F, fig.dim= c(6,8)}
 check_model(PSN)
 ```
+
+
 ```{r PSN summary, echo = F}
-PSN %>% tidy() %>% kable()
+PSN %>% tidy()%>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 *caveat* Although we see significant patterns in the model, the effect sizes are very small given the range of the data (0 - 0.15, mean = 0.015). I'm willing to think that these patterns aren't ecologically meaningful. 
@@ -378,7 +563,7 @@ check_model(TPN)
 
 
 ```{r TPN summary, echo = F}
-TPN %>% tidy() %>% kable()
+TPN %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 Nothing really going on here. The only pattern with transpiration (marginal, and again the effect size is so slight that I don't think it's biologically meaningful) is that transpiration is a bit lower at high soil moisture compared to the other treatments. 
@@ -418,7 +603,7 @@ check_model(ET)
 
 
 ```{r ET summary, echo = F}
-ET %>% tidy() %>% kable()
+ET %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 
 Summary: There are no patterns with ET. There was no difference between planted and bare treatments and ET. This isn't surprising given that the plants were so small. 
