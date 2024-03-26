@@ -233,8 +233,23 @@ ggsave(plot = Fig4, filename = "04_analyses/04_Figures/ManuscriptFigs/Figure4.pn
 
 ### Figure 5 (Broad PW Geochem Trends) -----------------------------------------
 # load all of those geochemistry models
-mod8 <- readRDS("04_analyses/02_models/Output/KSoil.RDS")
-mod9 <- readRDS("04_analyses/02_models/Output/NO3Soil.RDS")
+mod8 <- readRDS("04_analyses/02_models/Output/ICSoil.RDS")
+mod9 <- readRDS("04_analyses/02_models/Output/OCSoil.RDS")
+mod10 <- readRDS("04_analyses/02_models/Output/NO3Soil.RDS")
+mod11 <- readRDS("04_analyses/02_models/Output/NH4Soil.RDS")
+mod12 <- readRDS("04_analyses/02_models/Output/NaSoil.RDS")
+mod13 <- readRDS("04_analyses/02_models/Output/CaSoil.RDS")
+mod14 <- readRDS("04_analyses/02_models/Output/LiSoil.RDS")
+mod15 <- readRDS("04_analyses/02_models/Output/MgSoil.RDS")
+mod16 <- readRDS("04_analyses/02_models/Output/KSoil.RDS")
+mod17 <- readRDS("04_analyses/02_models/Output/FSoil.RDS")
+mod18 <- readRDS("04_analyses/02_models/Output/BrSoil.RDS")
+mod19 <- readRDS("04_analyses/02_models/Output/ClSoil.RDS")
+mod20 <- readRDS("04_analyses/02_models/Output/SO4Soil.RDS")
+#mod21 <- readRDS("04_analyses/02_models/Output/PO4Soil.RDS")
+
+#Note- must remove PO4 model because some categories lack data and
+# can't be used for predictions
 
 # A function that generate model predictions for each treatment,
 # computes the difference relative to the abiotic control treatment,
@@ -270,7 +285,79 @@ pred <- left_join(modpred, pv, by = c("Soil", "Level"))
 return(pred)
 }
 
-Kpred <- heatpred(mod8) %>%
-  mutate(solute = "Potassium")
-NO3pred <- heatpred(mod9) %>%
-  mutate(solute = "Nitrate")
+# create a list of the models to run through the function
+modlist <- list(mod8, mod9, mod10, mod11, mod12,
+                mod13, mod14, mod15, mod16, mod17,
+                mod18, mod19, mod20
+             #   , mod21
+                )
+
+# run list of models through the function and
+# transform output so that it is usable downstream
+predout <- data.frame(apply(sapply(modlist, heatpred), 1, unlist)) %>%
+  mutate(Solute = rep(c("Inorganic Carbon",
+                        "Organic Carbon",
+                        "Nitrate",
+                        "Ammonium",
+                        "Sodium",
+                        "Calcium",
+                        "Lithium",
+                        "Magnesium",
+                        "Potassium",
+                        "Fluoride",
+                        "Bromide",
+                        "Chloride",
+                        "Sulfate"
+                       # ,"Phosphate"
+                        ), each = 9))
+
+#for some reason this bit messed up Lithium when it was run as part of
+# the previous chunk. It's totally fine when separated. Weird. 
+predout2 <- predout %>% mutate( prop.diff.t = ifelse(p.value > 0.1, 0, prop.diff),
+         p.value.t = case_when(p.value < 0.001 ~ "***",
+                               p.value < 0.01 ~ "**",
+                               p.value < 0.05 ~ "*",
+                               p.value < 0.1 ~ ".",
+                               .default = " "))
+# these columns must be numeric
+predout2$prop.diff <- as.numeric(predout2$prop.diff)
+predout2$p.value <- as.numeric(predout2$p.value)
+
+# Make the figure
+
+predout2$Soil <- factor(predout2$Soil, c("N", "S", "L"))
+
+predout2$Solute <- factor(predout2$Solute, c("Inorganic Carbon",
+                                             "Organic Carbon",
+                                             "Nitrate",
+                                             "Ammonium",
+                                             "Sodium",
+                                             "Calcium",
+                                             "Lithium",
+                                             "Magnesium",
+                                             "Potassium",
+                                             "Fluoride",
+                                             "Bromide",
+                                             "Chloride",
+                                             "Sulfate"))
+Fig5 <- ggplot(predout2, aes(x = Soil, y = Solute, fill = log1p(prop.diff))) +
+  geom_tile(color = "black") +
+  facet_wrap(~Level, labeller = as_labeller(c("1" = "30-50% of WHC",
+                                              "2" = "55-75% of WHC",
+                                              "3" = "80-100% of WHC"))) +
+    geom_text(aes(label = p.value.t)) +
+  xlab("Treatment") +
+    scale_fill_gradient2("",
+                         low = "blue", 
+                        mid = "white",
+                        high = "red") +
+  scale_x_discrete(labels = c("N" = "Microbes \nOnly",
+                              "S" = "Plant \nOnly",
+                              "L" = "Plant & \n Microbes")) +
+  coord_fixed() +
+  theme_classic(12)
+
+Fig5
+
+ggsave(plot = Fig5, filename = "04_analyses/04_Figures/ManuscriptFigs/Figure5.png")
+

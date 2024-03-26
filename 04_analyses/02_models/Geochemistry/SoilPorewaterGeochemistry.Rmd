@@ -500,6 +500,10 @@ ICSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kab
 
 The S and N treatments have lower IC than the treatment with microbes and plants (L). No other comparisons are significant. IC is something that we expect as a product of weathering- bicarbonates and stuff. Overall, at high soil moisture there is less IC. Perhaps this is because the pore spaces were saturated and it could have limited reaction rates. There is something interesting once more with the treatment, N ( no plants), IC increases quite a bit as soil moisture increases. This suggests that the reaction rates weren't limited under high soil moisture, but for some other reason. 
 
+```{r echo=FALSE}
+saveRDS(ICSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/ICSoil.RDS")
+```
+
 ```{r IC plot2, message=F, echo=FALSE}
 ICpreds <- ggemmeans(ICSoil, terms = "Soil", type = "fixed")
 
@@ -636,7 +640,9 @@ OCSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kab
 
 Soil treatment has absolutely no effect on organic carbon. Similar to other analyses, NPOC is lower at the highest soil moisture. This is maybe not surprising because organic carbon is carbon that would not be present/produced in the abiotic treatment (N, as part of B), and would be produced and immediately used in the biotic treatments.
 
-
+```{r echo=FALSE}
+saveRDS(OCSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/OCSoil.RDS")
+```
 ### Effects of biomass on organic carbon 
 
 *Note*: only L and S treatments have biomass, so this is a model to compare L and S only.
@@ -741,7 +747,7 @@ saveRDS(NO3Soil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_mode
 
 
 
-```{r IC plot, message=F, echo=FALSE}
+```{r Nitrate plot, message=F, echo=FALSE}
 NO3preds <- ggemmeans(NO3Soil, terms = "Soil", type = "fixed")
 
 NO3preds$x <- factor(NO3preds$x, c("C", "N", "S", "L"))
@@ -824,6 +830,10 @@ NH4Soil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% ka
 
 There is very little happening with ammonium. We see that for the L treatment (plant and microbes), ammonium decreases at the highest soil moisture, and that for the S treatment (plant but no microbes) ammonium increases at the highest soil moisture. So plants, microbes, and soil moisture interact to affect the amount of ammonium in the pore water. 
 
+```{r echo=FALSE}
+saveRDS(NH4Soil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/NH4Soil.RDS")
+```
+
 [Table of Contents](#toc)
 
 <a id="item-five"></a>
@@ -877,6 +887,10 @@ NaSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kab
 ```
 
 Nothing really happening here except for a relationship between sodium and soil moisture. Sodium decreases at the highest soil moisture treatment, except for N in which case it actually increases quite a bit. I think there is something going on between biota and many of the bioavailable substances in the porewater. We see a similar relationship for organic carbon.
+
+```{r echo=FALSE}
+saveRDS(NaSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/NaSoil.RDS")
+```
 
 ```{r Na plot, message=F, echo=FALSE}
 Napreds <- ggemmeans(NaSoil, terms = c("Soil", "Level"), type = "fixed")
@@ -953,6 +967,10 @@ CaSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kab
 
 Nothing affects the amount of Calcium in the soil.
 
+```{r echo=FALSE}
+saveRDS(CaSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/CaSoil.RDS")
+```
+
 ### Magnesium
 
 ```{r Magnesium Soil model selection, warning = F, message = F, include=F }
@@ -1002,6 +1020,10 @@ MgSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kab
 ```
 
 Moisture has no effect on porewater magnesium, however there seems to be an interaction between plants and microbes because the "L" treatment has higher magnesium than the S (plants, no microbes) and C (microbes, no plants) treatment. So magnesium presents a situation in which both parties are necessary to elevate its concentration. Through which processes is magnesium created? Will there be specific plant-associated microbes that we should be on the lookout for in the metaG data?
+
+```{r echo=FALSE}
+saveRDS(MgSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/MgSoil.RDS")
+```
 
 ```{r MG plot, message=F, echo=FALSE}
 Mgpreds <- ggemmeans(MgSoil, terms = "Soil", type = "fixed")
@@ -1135,6 +1157,11 @@ check_model(LiSoil)
 ```{r Li Model Summary, echo=FALSE}
 LiSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
+
+```{r echo=FALSE}
+saveRDS(LiSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/LiSoil.RDS")
+```
+
 <a id="summary-three"></a>
 
 ## Cations Summary
@@ -1210,6 +1237,10 @@ FSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kabl
 
 Fluoride is responsive to soil moisture only. It is stable from low to medium soil moisture and decreases at high soil moisture. Neither plants nor microbes affect Fluoride concentrations in the soil. 
 
+```{r echo=FALSE}
+saveRDS(FSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/FSoil.RDS")
+```
+
 ```{r F plot, message=F, echo=FALSE}
 Fpreds <- ggemmeans(FSoil, terms = c("Level" ), type = "fixed")
 
@@ -1284,6 +1315,10 @@ BrSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kab
 
 Absolutely nothing affects the concentration of Bromide.
 
+```{r echo=FALSE}
+saveRDS(BrSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/BrSoil.RDS")
+```
+
 ### Chloride
 
 ```{r Cl Soil model selection, warning = F, message = F, include=F }
@@ -1332,6 +1367,9 @@ check_model(ClSoil)
 ClSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
 ```
 Chloride is sensitive to soil moisture only and peaks at intermediate soil moisture. 
+```{r echo=FALSE}
+saveRDS(ClSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/ClSoil.RDS")
+```
 
 ### Phosphate
 
@@ -1389,6 +1427,10 @@ PO4Soil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% ka
 ```
 
 The microbe only treatment, N, has the highest phosphate levels, and phosphate only increases as soil moisture increases. With the addition of biota, we see a decrease in phosphate. The presence of plants seems to have a stronger effect on the draw down (use) of phosphate than microbes alone. We can see that the S and L treatments are significantly lower than N, whle the C treatment is only marginally lower. 
+
+```{r echo=FALSE}
+saveRDS(PO4Soil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/PO4Soil.RDS")
+```
 
 ```{r PO4 plot, message=F, echo=FALSE}
 PO4preds <- ggemmeans(PO4Soil, terms = "Soil", type = "fixed")
@@ -1469,6 +1511,10 @@ SO4Soil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% ka
 ```
 
 Only soil moisture affects sulfate concentrations. Concentrations increase between low and medium treatments and decrease between medium and high concentrations. 
+
+```{r echo=FALSE}
+saveRDS(SO4Soil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/SO4Soil.RDS")
+```
 
 ```{r SO4 plot, message=F, echo=FALSE}
 SO4preds <- ggemmeans(SO4Soil, terms = "Level", type = "fixed")
