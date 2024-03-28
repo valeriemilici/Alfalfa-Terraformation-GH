@@ -345,8 +345,9 @@ Fig5 <- ggplot(predout2, aes(x = Soil, y = Solute, fill = log1p(prop.diff))) +
   facet_wrap(~Level, labeller = as_labeller(c("1" = "30-50% of WHC",
                                               "2" = "55-75% of WHC",
                                               "3" = "80-100% of WHC"))) +
-    geom_text(aes(label = p.value.t)) +
-  xlab("Treatment") +
+    geom_text(aes(label = p.value.t),
+              size = 8) +
+  xlab("Soil Biota Treatment") +
     scale_fill_gradient2("",
                          low = "blue", 
                         mid = "white",
@@ -359,5 +360,121 @@ Fig5 <- ggplot(predout2, aes(x = Soil, y = Solute, fill = log1p(prop.diff))) +
 
 Fig5
 
-ggsave(plot = Fig5, filename = "04_analyses/04_Figures/ManuscriptFigs/Figure5.png")
+ggsave(plot = Fig5,
+       filename = "04_analyses/04_Figures/ManuscriptFigs/Figure5.png")
 
+
+### Figure 6 (Specific Highlighted Trends) -------------------------------------
+
+# Panel A- Sodium
+
+levelin <- c("1-1", "2-2", "3-3")
+soilin <- c("C-N", "C-L", "C-S")
+
+pvNa <- data.frame(test_predictions(mod12, terms = c("Soil", "Level"))) %>%
+  filter(Soil %in% soilin &
+           Level %in% levelin)
+
+pvNa$Soil <- factor(pvNa$Soil, levels = c("C-N", "C-S", "C-L"))
+
+panel6A <- ggplot(data = pvNa,
+                  mapping = aes(Level, (Contrast* -1),
+                                group = Soil, color = Soil)) +
+  geom_line() +
+  geom_pointrange(mapping = aes(ymin = (conf.high * -1),
+                                ymax = (conf.low * -1)),
+                  position = position_dodge(width = 0.1)) +
+  geom_hline(yintercept = 0,
+             linetype = "dotted") +
+  
+  xlab("") +
+  ylab("Sodium (mg/L)") +
+  scale_x_discrete(labels = c("1-1" = "30-50",
+                              "2-2" = "55-75",
+                              "3-3" = "80-100")) +
+  scale_color_viridis_d("",
+                        labels = c(
+                          "C-N" = "Microbes Only",
+                          "C-S" = "Plant Only",
+                          "C-L" = "Plant & \nMicrobes"),
+                        begin = 0.2) +
+  theme_classic(12)
+
+panel6A
+
+#Panel 6B - Lithium
+
+pvLi <- data.frame(test_predictions(mod14, terms = c("Soil", "Level"))) %>%
+  filter(Soil %in% soilin &
+           Level %in% levelin)
+
+pvLi$Soil <- factor(pvLi$Soil, levels = c("C-N", "C-S", "C-L"))
+
+panel6B <- ggplot(data = pvLi,
+                  mapping = aes(Level, (Contrast* -1),
+                                group = Soil, color = Soil)) +
+  geom_line() +
+  geom_pointrange(mapping = aes(ymin = (conf.high * -1),
+                                ymax = (conf.low * -1)),
+                  position = position_dodge(width = 0.1)) +
+  geom_hline(yintercept = 0,
+             linetype = "dotted") +
+  
+  xlab("") +
+  ylab("Lithium (mg/L)") +
+  scale_x_discrete(labels = c("1-1" = "30-50",
+                              "2-2" = "55-75",
+                              "3-3" = "80-100")) +
+  scale_color_viridis_d("",
+                        labels = c(
+                          "C-N" = "Microbes Only",
+                          "C-S" = "Plant Only",
+                          "C-L" = "Plant & \nMicrobes"),
+                        begin = 0.2) +
+  theme_classic(12)
+
+
+panel6B
+#Figure Panel 6C - Magnesium
+                                      
+pvMg <- data.frame(test_predictions(mod15, terms = c("Soil", "Level"))) %>%
+  filter(Soil %in% soilin &
+           Level %in% levelin)
+
+pvMg$Soil <- factor(pvMg$Soil, levels = c("C-N", "C-S", "C-L"))
+
+panel6C <- ggplot(data = pvMg,
+                  mapping = aes(Level, (Contrast * -1),
+                                group = Soil, color = Soil)) +
+  geom_line() +
+  geom_pointrange(mapping = aes(ymin = (conf.high * -1),
+                                ymax = (conf.low * -1)),
+                  position = position_dodge(width = 0.1)) +
+  geom_hline(yintercept = 0,
+             linetype = "dotted") +
+ 
+  xlab("") +
+  ylab("Magnesium (mg/L)") +
+  scale_x_discrete(labels = c("1-1" = "30-50",
+                              "2-2" = "55-75",
+                              "3-3" = "80-100")) +
+  scale_color_viridis_d("",
+                        labels = c(
+                                   "C-N" = "Microbes Only",
+                                   "C-S" = "Plant Only",
+                                   "C-L" = "Plant & \nMicrobes"),
+                        begin = 0.2) +
+  theme_classic(12)
+
+panel6C
+
+# Join Together
+
+Figure6 <- panel6A + panel6B + panel6C +
+  plot_annotation(tag_levels = "A",
+                  caption = "Percent of Total Water Holding Capacity",
+                  theme = theme(plot.caption = element_text(hjust = 0.45, size = 12))) +
+  plot_layout(guides = "collect")
+
+ggsave(plot = Figure6, filename = "04_analyses/04_Figures/ManuscriptFigs/Figure6.png",
+       width = 10, height = 3, units = "in")
