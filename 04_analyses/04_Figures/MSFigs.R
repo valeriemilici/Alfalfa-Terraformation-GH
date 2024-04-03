@@ -141,43 +141,29 @@ ggsave(plot = Fig2, filename = "04_analyses/04_Figures/ManuscriptFigs/Figure2.pn
 
 mod5 <- readRDS("04_analyses/02_models/Output/BiomassGS.RDS")
 
-BMGeno.fun <- function(.){
-  s.dat <- expand.grid(Geno = c("CRI","G15","INA","MOC","TAS","VIR","YON", "K19"),
-                       Soil = "S",
-                       Level = "1")
-  l.dat <- expand.grid(Geno = c("CRI","G15","INA","MOC","TAS","VIR","YON", "K19"),
-                       Soil = "L",
-                       Level = "1")
-  s.est <- predict(., newdata = s.dat, re.form = ~0)
-  l.est <- predict(., newdata = l.dat, re.form = ~0)
-  
-  l.est - s.est
-}
+genoin1 <- c("CRI-CRI", "G15-G15", "K19-K19", "MOC-MOC", "TAS-TAS", "VIR-VIR",
+            "YON-YON")
+m5preds <- data.frame(test_predictions(mod5, c("Geno", "Soil"))) %>%
+  filter(Geno %in% genoin)
 
-#Create cluster within computer to bootstrap in parallel
-cl <- makeCluster(detectCores()) 
-clusterEvalQ(cl, library(lme4))
-
-mod5Boot <- bootMer(mod5, FUN = BMGeno.fun,
-                   nsim = 1000, parallel = "snow", ncpus = detectCores(),cl = cl)
-
-stopCluster(cl = cl)
-
-mod5preds <- data.frame(preds =BMGeno.fun(mod5),
-                             confint(mod5Boot),
-                             Geno = c("CRI","G15","INA","MOC","TAS","VIR","YON", "K19") )
-names(mod5preds)[2:3] <- c("lwr", "upr")
-
-Fig3 <- ggplot(mod5preds, aes(Geno, (preds/10))) +
-  geom_pointrange(mapping = aes(ymin = (lwr/10), ymax = (upr/10))) + 
+Fig3 <- ggplot(m5preds, aes(Geno, (-1* Contrast/10))) +
+  geom_pointrange(mapping = aes(ymin = (-1* conf.low/10), ymax = (-1* conf.high/10))) + 
   labs(x = "Population",
        y = "Microbe Effect on Biomass") +
+  scale_x_discrete(labels = c("CRI-CRI" = "1",
+                              "G15-G15" = "2",
+                              "K19-K19" = "3",
+                              "MOC-MOC" = "4",
+                              "TAS-TAS" = "5",
+                              "VIR-VIR" = "6",
+                              "YON-YON" = "7")) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
   theme_classic(12) 
 
 Fig3
 
-ggsave(plot = Fig3, filename = "04_analyses/04_Figures/ManuscriptFigs/Figure3.png")
+ggsave(plot = Fig3, filename = "04_analyses/04_Figures/ManuscriptFigs/Figure3.png",
+       height = 4, width = 6, units = "in")
 
 ### Figure 4 (EC and pH) -------------------------------------------------------
 
@@ -478,3 +464,37 @@ Figure6 <- panel6A + panel6B + panel6C +
 
 ggsave(plot = Figure6, filename = "04_analyses/04_Figures/ManuscriptFigs/Figure6.png",
        width = 10, height = 3, units = "in")
+
+### Figure NA (Solutes responsive to moisture only) ------------------------------
+
+#Note- there is no solute that is responsive to soil moisture alone
+
+### Figure 7 (GS microbe effects on IC) ----------------------------------------
+mod22 <- readRDS("04_analyses/02_models/Output/ICGeno.RDS")
+
+genoin <- c("CRI-CRI", "G15-G15", "K19-K19", "MOC-MOC", "TAS-TAS", "VIR-VIR",
+            "YON-YON")
+m22preds <- data.frame(test_predictions(mod22, c("Geno", "Soil"))) %>%
+  filter(Geno %in% genoin)
+
+Fig7 <- ggplot(m22preds, aes(Geno, Contrast)) +
+  geom_pointrange(mapping = aes(ymin = conf.low, ymax = conf.high)) + 
+  labs(x = "Population",
+       y = "Microbe Effect on \nInorganic Carbon (ppm)") +
+  scale_x_discrete(labels = c("CRI-CRI" = "1",
+                              "G15-G15" = "2",
+                              "K19-K19" = "3",
+                              "MOC-MOC" = "4",
+                              "TAS-TAS" = "5",
+                              "VIR-VIR" = "6",
+                              "YON-YON" = "7")) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  theme_classic(12) 
+
+Fig7
+ggsave(plot = Fig7, filename = "04_analyses/04_Figures/ManuscriptFigs/Figure7.png",
+       height = 4, width = 6, units = "in")
+
+### Figure NA (GS water effects) ----------------------------------------
+
+#all of these are terrible and don't add to storytelling

@@ -81,7 +81,7 @@ outs <- c("515", "639", "A20", "D16", "R24", "SWE", "212", "105", "G74")
 dat1 <- dat %>% filter(!Geno %in% outs) 
 
 dat1$Soil <- relevel(factor(dat1$Soil),
-                       ref = "S")
+                       ref = "C")
 ```
 
 
@@ -327,6 +327,11 @@ Here we see the same patterns for IC that we saw for TC. This makes sense becaus
 
 3 - MOC has low IC while 6 - G15 has high IC. Microbes increase IC. 3 - MOC is sensitive (and positively so) with microbes and is associated with above average levels of IC in the presence of microbes. 6 - G15 is negatively associated with micrboes and has decreased IC. 
 
+```{r}
+saveRDS(ICGeno, file = "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/ICGeno.RDS")
+```
+
+
 ### Effects of biomass on inorganic carbon 
 
 
@@ -490,6 +495,11 @@ NO3Geno %>% tidy() %>% kable()
 ```
 
 Microbes don't affect NO3, but there is intraspecific variation and genotype specific interactions with soil moisture. 5 - TAS and 6 - G15 have above average NO3 concentrations, and then at intermediate soil moisture 2 - YON has above average NO3, and 4 - VIR has very low NO3. 
+
+```{r echo=FALSE}
+saveRDS(NO3Geno, file = "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/NO3Geno.RDS")
+```
+
 
 ### Nitrite
 
@@ -745,6 +755,11 @@ FGeno %>% tidy() %>% kable()
 
 Fluoride is higher in the presence of soil microbes, with no interaction with geno. 3 - Moc and 5 - VIR have above average fluoride while 4 - TAS has below average fluoride. Fluroide levels drop at high soil moisture and this is especially true for 4 - TAS, but 2 - YON lacks a relationship with soil moisture and does not have less fluoride at high soil moisture.  
 
+```{r echo = FALSE}
+saveRDS(FGeno,"~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/FGeno.RDS")
+```
+
+
 ### Bromide
 
 ```{r Br Geno model selection, include=F }
@@ -826,6 +841,10 @@ ClGeno %>% tidy() %>% kable()
 There's more chloride when microbes are present and chloride may peak at intermediate soil moisture. 
 
 4 - TAS has above average cl and 6 -  G15 has below average Cl. 2 - YON and 6 - G15 each have dramatic increases in Cl at intermediate soil moisture, while 3 - MOC decreases at intermediate soil moisture. 6 - G15 experiences a decrease in Cl at high soil moisture. 
+
+```{r echo=FALSE}
+saveRDS(ClGeno, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/CLGeno.RDS")
+```
 
 ### Phosphate
 
