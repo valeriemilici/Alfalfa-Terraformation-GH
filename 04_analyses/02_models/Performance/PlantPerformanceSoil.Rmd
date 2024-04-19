@@ -324,7 +324,7 @@ But we also know that this pattern doesn't hold across the entire experiment...
 ## RGR across the entire experiment
 
 ```{r RGR entire, message = F}
-RGR2 <- lmer(RGR_d ~ Soil + Level +
+RGR2 <- lmer(RGR_d ~ Soil * Level +
                   HtPrevCensus +
                   (1|Geno) + (1|table) + (1|pot) + (1|CensusNo),
                 data = filter(census, CensusNo != 1 & status == 1 &

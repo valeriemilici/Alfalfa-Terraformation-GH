@@ -28,7 +28,6 @@ Fig1A <- ggplot() +
                                 ymax = conf.high,
                                 group = group,
                                 col = group),
-                  size = 1,
                   position = position_dodge(width = 0.2)) +
   xlab("") +
   ylab("Relative Growth Rate \n(mm/mm/day)") +
@@ -53,7 +52,6 @@ Fig1B <- ggplot() +
                                 ymax = conf.high,
                                 group = group,
                                 col = group),
-                  size = 1,
                   position = position_dodge(width = 0.2)) +
   xlab("") +
   ylab("Total Dry Biomass (g)") +
@@ -78,7 +76,6 @@ Fig1C <- ggplot() +
                                 ymax = conf.high,
                                 group = group,
                                 col = group),
-                  size = 1,
                   position = position_dodge(width = 0.2)) +
   xlab("Percent of Water Holding Capacity") +
   ylab("Probability of Survival") +
@@ -100,7 +97,8 @@ Fig1 <- Fig1A/Fig1B/Fig1C +
 Fig1
 
 # Save Figure
-ggsave(plot = Fig1, filename = "04_analyses/04_Figures/ManuscriptFigs/Figure1.png")
+ggsave(plot = Fig1, filename = "04_analyses/04_Figures/ManuscriptFigs/Figure1.png",
+       width = 4, height = 6, units = "in")
 
 ### Figure 2 (Root Mass Fraction/ Biomass Proportion) --------------------------
 
@@ -498,3 +496,45 @@ ggsave(plot = Fig7, filename = "04_analyses/04_Figures/ManuscriptFigs/Figure7.pn
 ### Figure NA (GS water effects) ----------------------------------------
 
 #all of these are terrible and don't add to storytelling
+
+### Supplemental Table 1 ------------------------
+
+tablefun<- function(mod){
+levelin <- c("1-1", "2-2", "3-3")
+soilin <- c("C-S", "C-L", "C-N")
+pv <- data.frame(test_predictions(mod, terms = c("Soil", "Level"))) %>%
+  filter(Level %in% levelin & Soil %in% soilin) %>%
+  mutate(Soil2 = str_extract(Soil, '\\w$'),
+         Level2 = str_extract(Level, '\\w$')) %>%
+  dplyr::select(!c(Soil, Level)) %>%
+  rename(Soil = Soil2, Level = Level2, Est.Diff = Contrast)
+
+return(pv)
+
+}
+modlist <- list(mod8, mod9, mod10, mod11, mod12,
+                mod13, mod14, mod15, mod16, mod17,
+                mod18, mod19, mod20
+                #   , mod21
+)
+
+# run list of models through the function and
+# transform output so that it is usable downstream
+tableout <- data.frame(apply(sapply(modlist, tablefun), 1, unlist)) %>%
+  mutate(Solute = rep(c("Inorganic Carbon",
+                        "Organic Carbon",
+                        "Nitrate",
+                        "Ammonium",
+                        "Sodium",
+                        "Calcium",
+                        "Lithium",
+                        "Magnesium",
+                        "Potassium",
+                        "Fluoride",
+                        "Bromide",
+                        "Chloride",
+                        "Sulfate"
+                        # ,"Phosphate"
+  ), each = 9))
+
+write.csv(tableout, file = "04_analyses/04_Figures/ManuscriptFigs/supptable1.csv")
