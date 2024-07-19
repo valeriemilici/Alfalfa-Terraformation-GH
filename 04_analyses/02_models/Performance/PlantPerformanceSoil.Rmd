@@ -21,6 +21,7 @@ library(performance) #model diagnostics
 library(rmarkdown) #to render the document
 library(knitr) # for pretty markdown tables
 library(ggeffects) # for direct easy model prediction plotting
+library(car) # for bartlett test
 
 dat <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/AllPerformanceGeochem.csv") 
 census <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/FullCensusTimeSeries.csv")
@@ -33,6 +34,9 @@ BMdat <- dat %>%
   #Only living plants have data
   filter(status == 1)
 
+outs <- c("212", "SWE", "D16")
+
+census <- census %>% filter(!Geno %in% outs)
 
 ```
 

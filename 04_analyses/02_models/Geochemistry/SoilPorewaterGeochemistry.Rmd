@@ -365,15 +365,11 @@ TCSoil1 <- lmer(TC_ppm ~ Soil * Level + scale(Dmass_tot) + as.factor(batch_TC) +
                  (1|Geno) + (1|dis_table) + (1|table),
                 data = dat)
 
-TCSoil2 <- lmer(TC_ppm ~ soil_LSB * Level + scale(Dmass_tot) +as.factor(batch_TC) +
+TCSoil2 <- lmer(TC_ppm ~ Soil + Level + scale(Dmass_tot) + as.factor(batch_TC) +
                  (1|Geno) + (1|dis_table) + (1|table),
                 data = dat)
 
-TCSoil3 <- lmer(TC_ppm ~ plant_YN * Level + scale(Dmass_tot) +as.factor(batch_TC) +
-                 (1|Geno) + (1|dis_table) + (1|table),
-                data = dat)
-
-compare_performance(TCSoil1, TCSoil2, TCSoil3, rank = T)
+compare_performance(TCSoil1, TCSoil2, rank = T)
 
 anova(TCSoil1)
 ```
@@ -431,7 +427,7 @@ TCplot
 
 ```{r total carbon and biomass, message = F}
 
-TCSoil2 <- lmer(TC_ppm ~ Soil+ scale(BMrat) + Level + 
+TCSoil2 <- lmer(TC_ppm ~ Soil + scale(BMrat) + Level + 
                   scale(Dmass_tot) + as.factor(batch_TC) +
                  (1|Geno) + (1|table) + (1|dis_table),
                   data = dat)
@@ -460,15 +456,11 @@ ICSoil1 <- lmer(IC ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_IC),
                 data = dat)
 
-ICSoil2 <- lmer(IC ~ soil_LSB * Level + scale(Dmass_tot) +
+ICSoil2 <- lmer(IC ~ Soil + Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_IC),
                 data = dat)
 
-ICSoil3 <- lmer(IC ~ plant_YN * Level + scale(Dmass_tot)  +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_IC),
-                data = dat)
-
-compare_performance(ICSoil1, ICSoil2, ICSoil3, rank = T)
+compare_performance(ICSoil1, ICSoil2, rank = T)
 
 anova(ICSoil1)
 ```
@@ -600,29 +592,17 @@ OCSoil1 <- lmer(NPOC ~ Soil + Level + scale(Dmass_tot) + batch_NPOC +
                  (1|Geno) + (1|dis_table) + (1|table),
                 data = dat)
 
-OCSoil2 <- lmer(NPOC ~ soil_LSB + Level + scale(Dmass_tot) + batch_NPOC +
+OCSoil2 <- lmer(NPOC ~ Soil * Level + scale(Dmass_tot) + batch_NPOC +
                  (1|Geno) + (1|dis_table) + (1|table),
                 data = dat)
-
-OCSoil3 <- lmer(NPOC ~ plant_YN + Level + scale(Dmass_tot)  + batch_NPOC +
-                 (1|Geno) + (1|dis_table) + (1|table),
-                data = dat)
-
-compare_performance(OCSoil1, OCSoil2, OCSoil3, rank = T)
+compare_performance(OCSoil1, OCSoil2, rank = T)
 
 anova(OCSoil2)
 ```
 
-The best model will combine N and C treatments as a single factor (B = bare soil), without an interaction between soil treatment and moisture level.
-
-```{r echo = F}
-dat$soil_LSB <- relevel(factor(dat$soil_LSB), 
-                     ref = "C")
-```
-
 ```{r OC, message = F}
 
-OCSoil <- lmer(log(NPOC) ~ Soil* Level + scale(Dmass_tot) + batch_NPOC +
+OCSoil <- lmer(log(NPOC) ~ Soil + Level + scale(Dmass_tot) + batch_NPOC +
                  (1|Geno) + (1|dis_table) + (1|table),
                 data = dat)
 ```
@@ -697,25 +677,13 @@ NO3Soil1 <- lmer((mu_NO3) ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = dat)
 
-NO3Soil2 <- lmer(mu_NO3 ~ soil_LSB * Level + scale(Dmass_tot) +
+NO3Soil2 <- lmer((mu_NO3) ~ Soil + Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = dat)
 
-NO3Soil3 <- lmer(mu_NO3 ~ plant_YN  * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
-                data = dat)
-
-compare_performance(NO3Soil1, NO3Soil2, NO3Soil3, rank = T)
-
-#Step 2:
-NO3Soil3b <- lmer(mu_NO3 ~ plant_YN  + Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
-                data = dat)
-
-compare_performance(NO3Soil3, NO3Soil3b, rank = T)
+compare_performance(NO3Soil1, NO3Soil2, rank = T)
 ```
 
-The best model only considers whether or not there was a plant in the pot, but no interaction with soil moisture. Some of the very low readings for Nitrate were reducing model performance, so they have been removed. 
 
 ```{r echo = F}
 dat$Soil <- relevel(factor(dat$Soil), 
@@ -723,7 +691,7 @@ dat$Soil <- relevel(factor(dat$Soil),
 ```
 
 ```{r Nitrate Soil Model, message=F}
-NO3Soil <- lmer(log(mu_NO3) ~ Soil * Level + scale(Dmass_tot) +
+NO3Soil <- lmer(log(mu_NO3) ~ Soil + Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_NO3 >= quantile(mu_NO3, na.rm = T, 0.1)))
 ```
@@ -786,35 +754,18 @@ NH4Soil1 <- lmer(log(mu_NH4) ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = dat)
 
-NH4Soil2 <- lmer(log(mu_NH4) ~ soil_LSB * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table)+ (1|batch_anion),
+NH4Soil2 <- lmer(log(mu_NH4) ~ Soil + Level + scale(Dmass_tot) +
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = dat)
 
-NH4Soil3 <- lmer(log(mu_NH4) ~ plant_YN * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table)+ (1|batch_anion),
-                data = dat)
+compare_performance(NH4Soil1, NH4Soil2, rank = T)
 
-compare_performance(NH4Soil1, NH4Soil2, NH4Soil3, rank = T)
-
-NH4Soil2b <- lmer(log(mu_NH4) ~ soil_LSB + Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table)+ (1|batch_anion),
-                data = dat)
-
-compare_performance(NH4Soil2, NH4Soil2b, rank = T)
 ```
-
-The best model considers whether or not plants had microbes against bare soil treatments together and includes an interaction with soil moisture.  
-
-```{r echo=F}
-dat$soil_LSB <- relevel(factor(dat$soil_LSB), 
-                     ref = "L")
-```
-
 
 ```{r Ammonium Soil Model, message=F}
-NH4Soil <- lmer(log(mu_NH4) ~ Soil * Level + scale(Dmass_tot) +
+NH4Soil <- lmer((mu_NH4) ~ Soil + Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table)+ (1|batch_anion),
-                data = dat)
+                data = filter(dat, mu_NH4 < 9 & mu_NH4 > 1))
 ```
 
 *Check Model Diagnostics*
@@ -836,7 +787,7 @@ saveRDS(NH4Soil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_mode
 
 [Table of Contents](#toc)
 
-<a id="item-five"></a>
+<a id="item-five"
 
 ## Cations
 
@@ -847,32 +798,23 @@ Jump to [summary](#summary-three) of Cation models.
 ```{r Sodium Soil model selection, include=F }
 
 NaSoil1 <- lmer(log(mu_Na) ~ Soil * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
                 data = dat)
 
-NaSoil2 <- lmer(log(mu_Na) ~ soil_LSB * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
+NaSoil2 <- lmer(log(mu_Na) ~ Soil + Level + scale(Dmass_tot) +
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
                 data = dat)
 
-NaSoil3 <- lmer(log(mu_Na) ~ plant_YN * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
-                data = dat)
+compare_performance(NaSoil1, NaSoil2,rank = T)
 
-compare_performance(NaSoil1, NaSoil2, NaSoil3, rank = T)
-
-NaSoil1b <- lmer(log(mu_Na) ~ Soil + Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
-                data = dat)
-
-compare_performance(NaSoil1, NaSoil1b, rank = T)
 ```
 
 The best model includes all soil treatments and an interaction between soil and level
 
 ```{r Sodium Soil Model, message=F}
-NaSoil <- lmer(log(mu_Na) ~ Soil * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
-                data = dat)
+NaSoil <- lmer((mu_Na) ~ Soil * Level + scale(Dmass_tot) +
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
+                data = filter(dat, mu_Na < 2000))
 ```
 
 *Check Model Diagnostics*
@@ -925,32 +867,23 @@ Naplot
 ```{r Calcium Soil model selection, warning = F, message = F, include=F }
 
 CaSoil1 <- lmer(log(mu_Ca) ~ Soil * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
                 data = filter(dat, mu_Ca >= quantile(mu_Ca, na.rm = T, 0.2)))
 
-CaSoil2 <- lmer(log(mu_Ca) ~ soil_LSB * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
+CaSoil2 <- lmer(log(mu_Ca) ~ Soil + Level + scale(Dmass_tot) +
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
                 data = filter(dat, mu_Ca >= quantile(mu_Ca, na.rm = T, 0.2)))
 
-CaSoil3 <- lmer(log(mu_Ca) ~ plant_YN * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
-                data = filter(dat, mu_Ca >= quantile(mu_Ca, na.rm = T, 0.2)))
+compare_performance(CaSoil1, CaSoil2, rank = T)
 
-compare_performance(CaSoil1, CaSoil2, CaSoil3, rank = T)
-
-CaSoil3b <- lmer(log(mu_Ca) ~ plant_YN + Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
-                data = filter(dat, mu_Ca >= quantile(mu_Ca, na.rm = T, 0.2)))
-
-compare_performance(CaSoil3, CaSoil3b, rank = T)
 ```
 
 The best model only evaluates bare vs planted, and does not include an interaction with microbes. 
 
 Initial diagnostics showed that some of the data were extremely low compared to the rest of the data and causing problems with model fit. 
 ```{r Calcium Soil Model, message=F}
-CaSoil <- lmer(log(mu_Ca) ~ Soil * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
+CaSoil <- lmer(log(mu_Ca) ~ Soil + Level + scale(Dmass_tot) +
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
                 data = filter(dat, mu_Ca >= quantile(mu_Ca, na.rm = T, 0.2)))
 ```
 
@@ -976,35 +909,19 @@ saveRDS(CaSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_model
 ```{r Magnesium Soil model selection, warning = F, message = F, include=F }
 
 MgSoil1 <- lmer(log(mu_Mg) ~ Soil * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
                 data = dat)
 
-MgSoil2 <- lmer(log(mu_Mg) ~ soil_LSB * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
+MgSoil2 <- lmer(log(mu_Mg) ~ Soil + Level + scale(Dmass_tot) +
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
                 data = dat)
 
-MgSoil3 <- lmer(log(mu_Mg) ~ plant_YN * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
-                data = dat)
-
-compare_performance(MgSoil1, MgSoil2, MgSoil3, rank = T)
-
-MgSoil3b <- lmer(log(mu_Mg) ~ soil_LSB + Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
-                data = dat)
-
-compare_performance(MgSoil3, MgSoil3b, rank = T)
+compare_performance(MgSoil1, MgSoil2, rank = T)
 ```
 
-The best model only evaluates bare vs live or sterile planted, and does not include an interaction with moisture
-
-
 ```{r Magnesium Soil Model, message=F}
-dat$Soil <- relevel(factor(dat$Soil),
-                    ref = "C")
-
 MgSoil <- lmer(log(mu_Mg) ~ Soil * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
                 data = dat)
 ```
 
@@ -1056,26 +973,14 @@ Mgplot
 
 #Step 1: Which format of treatment is best?
 KSoil1 <- lmer(log(mu_K) ~ Soil * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
                 data = dat)
 
-KSoil2 <- lmer(log(mu_K) ~ soil_LSB * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
+KSoil2 <- lmer(log(mu_K) ~ Soil + Level + scale(Dmass_tot) +
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
                 data = dat)
 
-KSoil3 <- lmer(log(mu_K) ~ plant_YN * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
-                data = dat)
-
-compare_performance(KSoil1, KSoil2, KSoil3, rank = T)
-
-# Step 2: Should treatment and level interact?
-
-KSoil1b <- lmer(log(mu_Mg) ~ Soil + Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
-                data = dat)
-
-compare_performance(KSoil1, KSoil1b, rank = T)
+compare_performance(KSoil1, KSoil2, rank = T)
 ```
 
 The best model contains all treatments and includes the interaction
@@ -1087,7 +992,7 @@ dat$Soil <- relevel(factor(dat$Soil),
 
 ```{r Potassium Soil Model, message=F}
 KSoil <- lmer(log(mu_K) ~ Soil * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
                 data = dat)
 ```
 
@@ -1143,11 +1048,23 @@ dat$Soil <- relevel(factor(dat$Soil),
                      ref = "C")
 ```
 
-```{r Lithium Soil Model, message=F}
+```{r Lithium Soil Model Selection, message=F, echo = F}
+LiSoil1 <- lmer(mu_Li ~ Soil * Level + scale(Dmass_tot) +
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
+                data = filter(dat, mu_Li < 1.5))
+
+LiSoil2 <- lmer(mu_Li ~ Soil + Level + scale(Dmass_tot) +
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
+                data = filter(dat, mu_Li < 1.5))
+
+compare_performance(LiSoil1, LiSoil2, rank = T)
+```
+```{r Li model, message=FALSE}
 LiSoil <- lmer(mu_Li ~ Soil * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cat),
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
                 data = filter(dat, mu_Li < 1.5))
 ```
+
 
 ```{r Lithium Diagnostics, echo=FALSE, fig.dim=c(6,8)}
 check_model(LiSoil)
@@ -1189,37 +1106,16 @@ FSoil1 <- lmer(log(mu_F) ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_F <= quantile(mu_F, na.rm = T, 0.85)))
 
-FSoil2 <- lmer(log(mu_F) ~ soil_LSB * Level + scale(Dmass_tot) +
+FSoil2 <- lmer(log(mu_F) ~ Soil + Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_F <= quantile(mu_F, na.rm = T, 0.85)))
 
-FSoil3 <- lmer(log(mu_F) ~ plant_YN * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
-                data = filter(dat, mu_F <= quantile(mu_F, na.rm = T, 0.85)))
-
-compare_performance(FSoil1, FSoil2, FSoil3, rank = T)
-
-# Step 2: Should treatment and level interact?
-
-FSoil2b <- lmer(log(mu_F) ~ soil_LSB + Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
-                data = filter(dat, mu_F <= quantile(mu_F, na.rm = T, 0.85)))
-
-compare_performance(FSoil2, FSoil2b, rank = T)
-```
-
-The best model combines both bare soil treatments and does not interact with soil moisture. The data between quantiles 0 - 0.85 is 2 - 35, and jumps to 100 at quantile 0.9 and is 435 at quantile 1, so I removed these extreme values that were creating a problem in the data. I have looked at the pots that produced the very high values and they are all planted treatments with an even mix between L and S treatments. When I do include these values in the model, the only difference is that the pattern with soil moisture becomes slightly weaker (and the model fits much worse).
-
-These really high values of F are all from the same two batches; 1 & 2. I think the machine gave bad values on those two days. All other anions are within their normal range in batches 1 and 2, so this issue is for fluoride only. 
-
-```{r echo = F}
-dat$soil_LSB <- relevel(factor(dat$soil_LSB), 
-                     ref = "S")
+compare_performance(FSoil1, FSoil2, rank = T)
 
 ```
 
 ```{r Fluoride Soil Model, message=F}
-FSoil <- lmer(log(mu_F) ~ Soil * Level + scale(Dmass_tot) +
+FSoil <- lmer(log(mu_F) ~ Soil + Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_F <= quantile(mu_F, na.rm = T, 0.85)))
 ```
@@ -1274,23 +1170,11 @@ BrSoil1 <- lmer(mu_Br ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_Br <= quantile(mu_Br, na.rm = T, 0.9)))
 
-BrSoil2 <- lmer(mu_Br ~ soil_LSB * Level + scale(Dmass_tot) +
+BrSoil2 <- lmer(mu_Br ~ Soil + Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_Br <= quantile(mu_Br, na.rm = T, 0.9)))
 
-BrSoil3 <- lmer(mu_Br ~ plant_YN * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
-                data = filter(dat, mu_Br <= quantile(mu_Br, na.rm = T, 0.9)))
-
-compare_performance(BrSoil1, BrSoil2, BrSoil3, rank = T)
-
-# Step 2: Should treatment and level interact?
-
-BrSoil3b <- lmer(mu_Br ~ plant_YN + Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
-                data = filter(dat, mu_Br <= quantile(mu_Br, na.rm = T, 0.9)))
-
-compare_performance(BrSoil3, BrSoil3b, rank = T)
+compare_performance(BrSoil1, BrSoil2, rank = T)
 ```
 
 The best model considers only plant or no plant and has no interaction with soil moisture. I'm filtering out some extremely high values to improve model fit. 
@@ -1328,27 +1212,12 @@ ClSoil1 <- lmer(mu_Cl ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_Cl <= quantile(mu_Cl, na.rm = T, 0.95)))
 
-ClSoil2 <- lmer(mu_Cl ~ soil_LSB * Level + scale(Dmass_tot) +
+ClSoil2 <- lmer(mu_Cl ~ Soil + Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_Cl <= quantile(mu_Cl, na.rm = T, 0.95)))
 
-ClSoil3 <- lmer(mu_Cl ~ plant_YN * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
-                data = filter(dat, mu_Cl <= quantile(mu_Cl, na.rm = T, 0.95)))
-
-compare_performance(ClSoil1, ClSoil2, ClSoil3, rank = T)
-
-# Step 2: Should treatment and level interact?
-
-ClSoil3b <- lmer(mu_Cl ~ plant_YN + Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
-                data = filter(dat, mu_Cl <= quantile(mu_Cl, na.rm = T, 0.95)))
-
-compare_performance(ClSoil3, ClSoil3b, rank = T)
+compare_performance(ClSoil1, ClSoil2, rank = T)
 ```
-
-The best model considers only plant or no plant and has no interaction with soil moisture. I'm filtering out some extremely high values to improve model fit. 
-
 
 ```{r Cl Soil Model, message=F}
 ClSoil <- lmer(mu_Cl ~ Soil * Level + scale(Dmass_tot) +
@@ -1382,27 +1251,14 @@ PO4Soil1 <- lmer(mu_PO4 ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_PO4 <= 25))
 
-PO4Soil2 <- lmer(mu_PO4 ~ soil_LSB * Level + scale(Dmass_tot) +
+PO4Soil2 <- lmer(mu_PO4 ~ Soil + Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_PO4 <= 25))
 
-PO4Soil3 <- lmer(mu_PO4 ~ plant_YN * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
-                data = filter(dat, mu_PO4 <= 25))
-
-compare_performance(PO4Soil1, PO4Soil2, PO4Soil3, rank = T)
-
-# Step 2: Should treatment and level interact?
-
-PO4Soil1b <- lmer(mu_PO4 ~ Soil + Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
-                data = filter(dat, mu_PO4 <= 25))
-
-
-compare_performance(PO4Soil1, PO4Soil1b, rank = T)
+compare_performance(PO4Soil1, PO4Soil2, rank = T)
 ```
 
-The best model includes all soil treatments with an interaction with level. There are some outlier values that I remove to improve model fit. 
+
 
 ```{r echo = F}
 dat$Soil <- relevel(factor(dat$Soil), 
@@ -1410,7 +1266,7 @@ dat$Soil <- relevel(factor(dat$Soil),
 ```
 
 ```{r PO4 Soil Model, message=F}
-PO4Soil <- lmer(mu_PO4 ~  Soil * Level + scale(Dmass_tot) +
+PO4Soil <- lmer(mu_PO4 ~  Soil + Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_PO4 <= 25))
 ```
@@ -1470,24 +1326,11 @@ SO4Soil1 <- lmer(mu_SO4 ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_SO4 <= 4000))
 
-SO4Soil2 <- lmer(mu_SO4 ~ soil_LSB * Level + scale(Dmass_tot) +
+SO4Soil2 <- lmer(mu_SO4 ~ Soil + Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_SO4 <= 4000))
 
-SO4Soil3 <- lmer(mu_SO4 ~ plant_YN * Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
-                data = filter(dat, mu_SO4 <= 4000))
-
-compare_performance(SO4Soil1, SO4Soil2, SO4Soil3, rank = T)
-
-# Step 2: Should treatment and level interact?
-
-SO4Soil3b <- lmer(mu_SO4 ~ plant_YN + Level + scale(Dmass_tot) +
-                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
-                data = filter(dat, mu_SO4 <= 4000))
-
-
-compare_performance(SO4Soil3, SO4Soil3b, rank = T)
+compare_performance(SO4Soil1, SO4Soil2, rank = T)
 ```
 
 The best model only compares whether there was a plant and has no interaction
@@ -1557,20 +1400,21 @@ Models with Phosphate suggest that treatments containing biota have lower phosph
 
 ```{r Prep the PCA data, echo=FALSE, include=FALSE}
 
-dat1 <- dat %>% dplyr::select(1,9,22:34, 36, 40, 42,43) 
+#fix this step here, SO4 is selected out
+dat1 <- dat %>% dplyr::select(1,9,11,22:27,29:36, 38, 40, 42,43) 
 
 colSums(is.na(dat1))
 #remove NO2, PO4, NH4
 
-dat2 <- dat1 %>% dplyr::select(!c(mu_NO2, mu_PO4, mu_NH4, mu_Li, mu_Br, mu_NO3)) %>%
+dat2 <- dat1 %>% dplyr::select(!c(mu_NO2, mu_PO4, mu_NH4)) %>%
   filter(!is.na(mu_F), !is.na(mu_Cl), !is.na(mu_SO4),
          !is.na(pH), !is.na(EC), !is.na(mu_Na), !is.na(mu_K),
-         !is.na(mu_Mg), !is.na(mu_Ca), !is.na(TC_ppm), !is.na(IC)
+         !is.na(mu_Mg), !is.na(mu_Ca), !is.na(TC_ppm), !is.na(IC), !is.na(mu_Br)
          )
 
 colSums(is.na(dat2)) 
 
-dat3 <- dat2 %>% dplyr::select(!c(pot, Soil)) #now only numbers for PCA
+dat3 <- dat2 %>% dplyr::select(!c(pot, Soil, Level)) #now only numbers for PCA
 
 #with this level of keeping variables/filtering we can build a PCA from 85 observations
 ```
@@ -1581,14 +1425,16 @@ pwGeo_pca <- PCA(dat3)
 
 ```{r plot PCA}
 pWGeochem <- fviz_pca_biplot(pwGeo_pca, 
-                col.ind = dat2$Soil, palette = "jco", 
+                col.ind = as.factor(dat2$Level), palette = "jco", 
                 addEllipses = T, ellipse.level = 0.95, label = "var", repel = TRUE,
-                legend.title = "Soil Treatment") +
+                legend.title = "Soil Moisture Treatment") +
   theme_classic(12)
 
 pWGeochem
 ```
 
-So... not much going on here. There's no separation of the different soil treatments based on the 11 porewater geochemistry variables that I included. I wonder what this would look like if the plants had been larger! The PCA includes 11 variables shared between 85 observations (out of a maximum of 97). 
+So... not much going on here. There's no separation of the different soil treatments based on the 11 porewater geochemistry variables that I included. I wonder what this would look like if the plants had been larger! The PCA includes 11 variables shared between 115 observations (out of a maximum of 245). 
+
+Previously it was 85/97, so number of samples analyzed has improved with improved geochemistry
 
 [Table of Contents](#toc)

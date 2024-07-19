@@ -26,6 +26,9 @@ pw_geo <- read.csv("data/01_PrepData/PW_Geochemistry.csv")
 
 #Carbon and Nitrogen information in the soil (incomplete)
 s_geo <- read.csv("data/01_PrepData/Solid_Geochemistry_Priority.csv")
+
+#root length of the alfalfa
+root <- read.csv("data/01_PrepData/RootLength.csv")
 ### Create Performance Data ----------------------------------------------------
 
 #We will create two different spreadsheets: 
@@ -105,20 +108,25 @@ dis1 <- discharge %>%
                            TRUE ~ 2)) %>%
   dplyr::select(pot,ET,Dmass_tot, soil_LSB, plant_YN, batch_discharge, dis_table)
 
+#condense repeat measurements into averages
+root1 <- root %>% group_by(pot) %>%
+  summarise(mean_rootlength = median(root_cm))
+
 #start with LiCor data because this may have the most measurements
 dat1 <- merge(dat, licor, by = "pot", all = T)
 dat2 <- merge(dat1, bm, by = "pot", all.x = T)
 dat3 <- merge(dat2, pw_geo, by = "pot", all.x = T)
 dat4 <- merge(dat3, dis1, by = "pot", all.x = T)
 dat5 <- merge(dat4, s_geo, by = "pot", all.x = T)
+dat6 <- merge(dat5, root1, by = "pot", all.x = T)
 
-dat6 <- dat5 %>%
+dat7 <- dat6 %>%
   #removes random "X" and "notes" columns
-  dplyr::select(1:12, 14:21, 24:52, 54:60) %>%
+  dplyr::select(1:12, 14:21, 24:52, 54:61) %>%
   #calculate final biomass columns
   mutate(totBM = massA + massB,
          BMrat = massB/massA) 
 
 #Export the finished dataframes ------------------------------------------------
 write.csv(census1, file = "data/ModData/FullCensusTimeSeries.csv",row.names = F)
-write.csv(dat6, file = "data/ModData/AllPerformanceGeochem.csv", row.names = F)
+write.csv(dat7, file = "data/ModData/AllPerformanceGeochem.csv", row.names = F)

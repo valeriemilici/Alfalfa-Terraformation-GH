@@ -355,13 +355,13 @@ ggsave(plot = Fig5,
 levelin <- c("1-1", "2-2", "3-3")
 soilin <- c("C-N", "C-L", "C-S")
 
-pvNa <- data.frame(test_predictions(mod12, terms = c("Soil", "Level"))) %>%
+pvK <- data.frame(test_predictions(mod16, terms = c("Soil", "Level"))) %>%
   filter(Soil %in% soilin &
            Level %in% levelin)
 
-pvNa$Soil <- factor(pvNa$Soil, levels = c("C-N", "C-S", "C-L"))
+pvK$Soil <- factor(pvK$Soil, levels = c("C-N", "C-S", "C-L"))
 
-panel6A <- ggplot(data = pvNa,
+panel6A <- ggplot(data = pvK,
                   mapping = aes(Level, (Contrast* -1),
                                 group = Soil, color = Soil)) +
   geom_line() +
@@ -372,7 +372,7 @@ panel6A <- ggplot(data = pvNa,
              linetype = "dotted") +
   
   xlab("") +
-  ylab("Sodium (mg/L)") +
+  ylab("Potassium (mg/L)") +
   scale_x_discrete(labels = c("1-1" = "30-50",
                               "2-2" = "55-75",
                               "3-3" = "80-100")) +
