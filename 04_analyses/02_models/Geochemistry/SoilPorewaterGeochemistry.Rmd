@@ -107,7 +107,7 @@ Jump to [summary](#summary-one) of models
 
 ```{r echo = F}
 dat$Soil <- relevel(factor(dat$Soil), 
-                     ref = "S")
+                     ref = "C")
 ```
 
 ### pH model
@@ -378,7 +378,7 @@ The model that separates the four soil treatments is the best model, and the int
 
 ```{r echo = F}
 dat$Soil <- relevel(factor(dat$Soil), 
-                     ref = "L")
+                     ref = "C")
 ```
 
 ```{r total carbon, message = F}
@@ -598,6 +598,11 @@ OCSoil2 <- lmer(NPOC ~ Soil * Level + scale(Dmass_tot) + batch_NPOC +
 compare_performance(OCSoil1, OCSoil2, rank = T)
 
 anova(OCSoil2)
+```
+
+```{r echo = F}
+dat$Soil <- relevel(factor(dat$Soil), 
+                     ref = "C")
 ```
 
 ```{r OC, message = F}

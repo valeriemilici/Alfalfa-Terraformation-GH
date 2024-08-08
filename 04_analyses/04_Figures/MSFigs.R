@@ -146,7 +146,7 @@ m5preds <- data.frame(test_predictions(mod5, c("Geno", "Soil"))) %>%
 
 Fig3 <- ggplot(m5preds, aes(Geno, (-1* Contrast/10))) +
   geom_pointrange(mapping = aes(ymin = (-1* conf.low/10), ymax = (-1* conf.high/10))) + 
-  labs(x = "Population",
+  labs(x = "Genotype",
        y = "Microbe Effect on Biomass") +
   scale_x_discrete(labels = c("CRI-CRI" = "1",
                               "G15-G15" = "2",
@@ -230,7 +230,7 @@ mod17 <- readRDS("04_analyses/02_models/Output/FSoil.RDS")
 mod18 <- readRDS("04_analyses/02_models/Output/BrSoil.RDS")
 mod19 <- readRDS("04_analyses/02_models/Output/ClSoil.RDS")
 mod20 <- readRDS("04_analyses/02_models/Output/SO4Soil.RDS")
-#mod21 <- readRDS("04_analyses/02_models/Output/PO4Soil.RDS")
+mod21 <- readRDS("04_analyses/02_models/Output/PO4Soil.RDS")
 
 #Note- must remove PO4 model because some categories lack data and
 # can't be used for predictions
@@ -273,7 +273,7 @@ return(pred)
 modlist <- list(mod8, mod9, mod10, mod11, mod12,
                 mod13, mod14, mod15, mod16, mod17,
                 mod18, mod19, mod20
-             #   , mod21
+               , mod21
                 )
 
 # run list of models through the function and
@@ -292,24 +292,24 @@ predout <- data.frame(apply(sapply(modlist, heatpred), 1, unlist)) %>%
                         "Bromide",
                         "Chloride",
                         "Sulfate"
-                       # ,"Phosphate"
+                       ,"Phosphate"
                         ), each = 9))
 
-#for some reason this bit messed up Lithium when it was run as part of
-# the previous chunk. It's totally fine when separated. Weird. 
+predout$p.value <- as.numeric(predout$p.value)
+
 predout2 <- predout %>% mutate( prop.diff.t = ifelse(p.value > 0.1, 0, prop.diff),
          p.value.t = case_when(p.value < 0.001 ~ "***",
                                p.value < 0.01 ~ "**",
                                p.value < 0.05 ~ "*",
                                p.value < 0.1 ~ ".",
                                .default = " "))
+
 # these columns must be numeric
 predout2$prop.diff <- as.numeric(predout2$prop.diff)
-predout2$p.value <- as.numeric(predout2$p.value)
 
 # Make the figure
 
-predout2$Soil <- factor(predout2$Soil, c("N", "S", "L"))
+predout2$Soil <- factor(predout2$Soil, levels = c("N", "S", "L"))
 
 predout2$Solute <- factor(predout2$Solute, c("Inorganic Carbon",
                                              "Organic Carbon",
@@ -323,7 +323,8 @@ predout2$Solute <- factor(predout2$Solute, c("Inorganic Carbon",
                                              "Fluoride",
                                              "Bromide",
                                              "Chloride",
-                                             "Sulfate"))
+                                             "Sulfate", 
+                                             "Phosphate"))
 Fig5 <- ggplot(predout2, aes(x = Soil, y = Solute, fill = log1p(prop.diff))) +
   geom_tile(color = "black") +
   facet_wrap(~Level, labeller = as_labeller(c("1" = "30-50% of WHC",
@@ -337,7 +338,7 @@ Fig5 <- ggplot(predout2, aes(x = Soil, y = Solute, fill = log1p(prop.diff))) +
                         mid = "white",
                         high = "red") +
   scale_x_discrete(labels = c("N" = "Microbes \nOnly",
-                              "S" = "Plant \nOnly",
+                             "S" = "Plant \nOnly",
                               "L" = "Plant & \n Microbes")) +
   coord_fixed() +
   theme_classic(12)
@@ -350,12 +351,12 @@ ggsave(plot = Fig5,
 
 ### Figure 6 (Specific Highlighted Trends) -------------------------------------
 
-# Panel A- Sodium
+# Panel A- Potassium
 
 levelin <- c("1-1", "2-2", "3-3")
 soilin <- c("C-N", "C-L", "C-S")
 
-pvK <- data.frame(test_predictions(mod16, terms = c("Soil", "Level"))) %>%
+pvK <- data.frame(test_predictions(PO4Soil, terms = c("Soil", "Level"))) %>%
   filter(Soil %in% soilin &
            Level %in% levelin)
 
@@ -477,7 +478,7 @@ m22preds <- data.frame(test_predictions(mod22, c("Geno", "Soil"))) %>%
 
 Fig7 <- ggplot(m22preds, aes(Geno, Contrast)) +
   geom_pointrange(mapping = aes(ymin = conf.low, ymax = conf.high)) + 
-  labs(x = "Population",
+  labs(x = "Genotype",
        y = "Microbe Effect on \nInorganic Carbon (ppm)") +
   scale_x_discrete(labels = c("CRI-CRI" = "1",
                               "G15-G15" = "2",
@@ -515,7 +516,7 @@ return(pv)
 modlist <- list(mod8, mod9, mod10, mod11, mod12,
                 mod13, mod14, mod15, mod16, mod17,
                 mod18, mod19, mod20
-                #   , mod21
+                , mod21
 )
 
 # run list of models through the function and
@@ -534,7 +535,7 @@ tableout <- data.frame(apply(sapply(modlist, tablefun), 1, unlist)) %>%
                         "Bromide",
                         "Chloride",
                         "Sulfate"
-                        # ,"Phosphate"
+                        ,"Phosphate"
   ), each = 9))
 
 write.csv(tableout, file = "04_analyses/04_Figures/ManuscriptFigs/supptable1.csv")
