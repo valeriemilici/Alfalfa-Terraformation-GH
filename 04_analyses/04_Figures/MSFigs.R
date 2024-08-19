@@ -231,9 +231,7 @@ mod18 <- readRDS("04_analyses/02_models/Output/BrSoil.RDS")
 mod19 <- readRDS("04_analyses/02_models/Output/ClSoil.RDS")
 mod20 <- readRDS("04_analyses/02_models/Output/SO4Soil.RDS")
 mod21 <- readRDS("04_analyses/02_models/Output/PO4Soil.RDS")
-
-#Note- must remove PO4 model because some categories lack data and
-# can't be used for predictions
+mod22 <- readRDS("04_analyses/02_models/Output/NSoil.RDS")
 
 # A function that generate model predictions for each treatment,
 # computes the difference relative to the abiotic control treatment,
@@ -273,7 +271,7 @@ return(pred)
 modlist <- list(mod8, mod9, mod10, mod11, mod12,
                 mod13, mod14, mod15, mod16, mod17,
                 mod18, mod19, mod20
-               , mod21
+               , mod21, mod22
                 )
 
 # run list of models through the function and
@@ -292,7 +290,8 @@ predout <- data.frame(apply(sapply(modlist, heatpred), 1, unlist)) %>%
                         "Bromide",
                         "Chloride",
                         "Sulfate"
-                       ,"Phosphate"
+                       ,"Phosphate",
+                       "Nitrogen"
                         ), each = 9))
 
 predout$p.value <- as.numeric(predout$p.value)
@@ -313,6 +312,7 @@ predout2$Soil <- factor(predout2$Soil, levels = c("N", "S", "L"))
 
 predout2$Solute <- factor(predout2$Solute, c("Inorganic Carbon",
                                              "Organic Carbon",
+                                             "Nitrogen",
                                              "Nitrate",
                                              "Ammonium",
                                              "Sodium",
@@ -516,7 +516,7 @@ return(pv)
 modlist <- list(mod8, mod9, mod10, mod11, mod12,
                 mod13, mod14, mod15, mod16, mod17,
                 mod18, mod19, mod20
-                , mod21
+                , mod21, mod22
 )
 
 # run list of models through the function and
@@ -535,7 +535,15 @@ tableout <- data.frame(apply(sapply(modlist, tablefun), 1, unlist)) %>%
                         "Bromide",
                         "Chloride",
                         "Sulfate"
-                        ,"Phosphate"
+                        ,"Phosphate",
+                        "Nitrogen"
   ), each = 9))
+
+tableout$Est.Diff <- as.numeric(tableout$Est.Diff)*-1
+tableout$conf.low <- as.numeric(tableout$conf.low)*-1
+tableout$conf.high <- as.numeric(tableout$conf.high)*-1
+
+colnames(tableout) <- c("Est. Diff", "conf.high", "conf.low",
+                        "p.value", "Soil", "Level", "Solute")
 
 write.csv(tableout, file = "04_analyses/04_Figures/ManuscriptFigs/supptable1.csv")

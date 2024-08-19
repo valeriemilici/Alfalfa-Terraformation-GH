@@ -122,7 +122,7 @@ dat6 <- merge(dat5, root1, by = "pot", all.x = T)
 
 dat7 <- dat6 %>%
   #removes random "X" and "notes" columns
-  dplyr::select(1:12, 14:21, 24:52, 54:61) %>%
+  dplyr::select(1:12, 14:21, 24:55, 57:64) %>%
   #calculate final biomass columns
   mutate(totBM = massA + massB,
          BMrat = massB/massA) 

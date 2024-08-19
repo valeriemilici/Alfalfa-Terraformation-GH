@@ -1,127 +1,136 @@
 Solute,Soil Biota Treatment,Soil Moisture Treatment,Est. Difference,Conf. Low,Conf. High,P-value
-Ammonium,Microbes Only,1,-1.092,-3.910,1.727,0.439
-Ammonium,Plant & Microbes,1,0.201,-2.004,2.406,0.855
-Ammonium,Plant Only,1,-0.399,-2.562,1.764,0.712
-Ammonium,Microbes Only,2,-1.092,-3.910,1.727,0.439
-Ammonium,Plant & Microbes,2,0.201,-2.003,2.405,0.855
-Ammonium,Plant Only,2,-0.399,-2.563,1.765,0.712
-Ammonium,Microbes Only,3,-1.092,-3.910,1.727,0.439
-Ammonium,Plant & Microbes,3,0.201,-2.004,2.405,0.855
-Ammonium,Plant Only,3,-0.399,-2.563,1.764,0.712
-Bromide,Microbes Only,1,-0.033,-0.727,0.662,0.926
-Bromide,Plant & Microbes,1,0.038,-0.484,0.561,0.884
-Bromide,Plant Only,1,0.237,-0.261,0.735,0.347
-Bromide,Microbes Only,2,-0.260,-0.920,0.400,0.437
-Bromide,Plant & Microbes,2,0.172,-0.415,0.759,0.562
-Bromide,Plant Only,2,-0.044,-0.614,0.526,0.878
-Bromide,Microbes Only,3,-0.077,-0.638,0.484,0.785
-Bromide,Plant & Microbes,3,-0.298,-0.780,0.185,0.224
-Bromide,Plant Only,3,-0.391,-0.901,0.119,0.132
-Calcium,Microbes Only,1,0.236,-0.031,0.503,0.083
-Calcium,Plant & Microbes,1,0.149,-0.045,0.342,0.130
-Calcium,Plant Only,1,0.128,-0.061,0.318,0.182
-Calcium,Microbes Only,2,0.236,-0.031,0.503,0.083
-Calcium,Plant & Microbes,2,0.149,-0.045,0.342,0.130
-Calcium,Plant Only,2,0.128,-0.061,0.318,0.182
-Calcium,Microbes Only,3,0.236,-0.031,0.503,0.083
-Calcium,Plant & Microbes,3,0.149,-0.045,0.342,0.130
-Calcium,Plant Only,3,0.128,-0.061,0.318,0.182
-Chloride,Microbes Only,1,-232.054,-660.630,196.522,0.286
-Chloride,Plant & Microbes,1,-35.173,-473.829,403.483,0.874
-Chloride,Plant Only,1,-27.672,-455.640,400.297,0.898
-Chloride,Microbes Only,2,-240.581,-687.836,206.674,0.289
-Chloride,Plant & Microbes,2,-44.414,-520.270,431.442,0.854
-Chloride,Plant Only,2,-23.647,-491.325,444.032,0.920
-Chloride,Microbes Only,3,222.510,-157.487,602.507,0.248
-Chloride,Plant & Microbes,3,-10.062,-425.133,405.009,0.962
-Chloride,Plant Only,3,-193.203,-622.174,235.767,0.374
-Fluoride,Microbes Only,1,-0.124,-0.351,0.103,0.280
-Fluoride,Plant & Microbes,1,-0.029,-0.228,0.170,0.774
-Fluoride,Plant Only,1,-0.109,-0.307,0.088,0.275
-Fluoride,Microbes Only,2,-0.124,-0.351,0.103,0.280
-Fluoride,Plant & Microbes,2,-0.029,-0.228,0.170,0.774
-Fluoride,Plant Only,2,-0.109,-0.307,0.088,0.275
-Fluoride,Microbes Only,3,-0.124,-0.351,0.103,0.280
-Fluoride,Plant & Microbes,3,-0.029,-0.228,0.170,0.774
-Fluoride,Plant Only,3,-0.109,-0.307,0.088,0.275
-Inorganic Carbon,Microbes Only,1,-56.427,-100.159,-12.696,0.012
 Inorganic Carbon,Plant & Microbes,1,22.160,-15.097,59.417,0.241
+Inorganic Carbon,Microbes Only,1,-56.427,-100.159,-12.696,0.012
 Inorganic Carbon,Plant Only,1,1.682,-34.051,37.416,0.926
-Inorganic Carbon,Microbes Only,2,-26.980,-74.600,20.640,0.264
 Inorganic Carbon,Plant & Microbes,2,-6.326,-41.148,28.496,0.720
+Inorganic Carbon,Microbes Only,2,-26.980,-74.600,20.640,0.264
 Inorganic Carbon,Plant Only,2,-16.768,-50.896,17.359,0.333
-Inorganic Carbon,Microbes Only,3,28.583,-18.805,75.970,0.235
 Inorganic Carbon,Plant & Microbes,3,-3.061,-37.701,31.579,0.861
+Inorganic Carbon,Microbes Only,3,28.583,-18.805,75.970,0.235
 Inorganic Carbon,Plant Only,3,-6.191,-42.315,29.933,0.735
-Lithium,Microbes Only,1,-0.196,-0.472,0.080,0.163
-Lithium,Plant & Microbes,1,0.183,-0.024,0.390,0.083
-Lithium,Plant Only,1,0.219,0.030,0.409,0.024
-Lithium,Microbes Only,2,0.023,-0.254,0.300,0.871
-Lithium,Plant & Microbes,2,0.217,0.023,0.412,0.029
-Lithium,Plant Only,2,0.251,0.064,0.438,0.009
-Lithium,Microbes Only,3,0.353,0.087,0.619,0.010
-Lithium,Plant & Microbes,3,0.129,-0.054,0.311,0.164
-Lithium,Plant Only,3,0.125,-0.072,0.322,0.210
-Magnesium,Microbes Only,1,0.026,-0.831,0.882,0.953
-Magnesium,Plant & Microbes,1,0.915,0.269,1.561,0.006
-Magnesium,Plant Only,1,0.199,-0.396,0.793,0.509
-Magnesium,Microbes Only,2,1.336,0.447,2.225,0.004
-Magnesium,Plant & Microbes,2,1.496,0.882,2.111,< 0.001
-Magnesium,Plant Only,2,0.785,0.192,1.378,0.010
-Magnesium,Microbes Only,3,0.997,0.139,1.856,0.023
-Magnesium,Plant & Microbes,3,0.896,0.306,1.485,0.003
-Magnesium,Plant Only,3,0.443,-0.187,1.074,0.167
-Nitrate,Microbes Only,1,-0.139,-0.684,0.407,0.615
-Nitrate,Plant & Microbes,1,-0.246,-0.841,0.349,0.413
-Nitrate,Plant Only,1,-0.277,-0.867,0.313,0.354
-Nitrate,Microbes Only,2,-0.139,-0.684,0.407,0.615
-Nitrate,Plant & Microbes,2,-0.246,-0.841,0.349,0.413
-Nitrate,Plant Only,2,-0.277,-0.867,0.313,0.354
-Nitrate,Microbes Only,3,-0.139,-0.684,0.407,0.615
-Nitrate,Plant & Microbes,3,-0.246,-0.841,0.349,0.413
-Nitrate,Plant Only,3,-0.277,-0.867,0.313,0.354
-Organic Carbon,Microbes Only,1,-0.015,-0.518,0.487,0.952
 Organic Carbon,Plant & Microbes,1,-0.494,-1.429,0.442,0.299
+Organic Carbon,Microbes Only,1,-0.015,-0.518,0.487,0.952
 Organic Carbon,Plant Only,1,-0.528,-1.460,0.404,0.264
-Organic Carbon,Microbes Only,2,-0.015,-0.518,0.487,0.952
 Organic Carbon,Plant & Microbes,2,-0.494,-1.429,0.442,0.299
+Organic Carbon,Microbes Only,2,-0.015,-0.518,0.487,0.952
 Organic Carbon,Plant Only,2,-0.528,-1.460,0.404,0.264
-Organic Carbon,Microbes Only,3,-0.015,-0.518,0.487,0.952
 Organic Carbon,Plant & Microbes,3,-0.494,-1.429,0.442,0.299
+Organic Carbon,Microbes Only,3,-0.015,-0.518,0.487,0.952
 Organic Carbon,Plant Only,3,-0.528,-1.460,0.404,0.264
-Phosphate,Microbes Only,1,1.096,-0.378,2.569,0.143
-Phosphate,Plant & Microbes,1,1.780,0.349,3.212,0.015
-Phosphate,Plant Only,1,-0.532,-1.913,0.849,0.446
-Phosphate,Microbes Only,2,1.096,-0.378,2.569,0.143
-Phosphate,Plant & Microbes,2,1.780,0.349,3.212,0.015
-Phosphate,Plant Only,2,-0.532,-1.913,0.849,0.446
-Phosphate,Microbes Only,3,1.096,-0.378,2.569,0.143
-Phosphate,Plant & Microbes,3,1.780,0.349,3.212,0.015
-Phosphate,Plant Only,3,-0.532,-1.913,0.849,0.446
-Potassium,Microbes Only,1,-1.123,-1.696,-0.549,< 0.001
-Potassium,Plant & Microbes,1,-0.118,-0.565,0.330,0.603
-Potassium,Plant Only,1,-0.024,-0.438,0.390,0.910
-Potassium,Microbes Only,2,-0.412,-1.007,0.184,0.174
-Potassium,Plant & Microbes,2,0.009,-0.418,0.435,0.969
-Potassium,Plant Only,2,-0.079,-0.491,0.333,0.704
-Potassium,Microbes Only,3,0.587,0.012,1.162,0.046
-Potassium,Plant & Microbes,3,-0.105,-0.516,0.305,0.612
-Potassium,Plant Only,3,-0.020,-0.458,0.418,0.928
-Sodium,Microbes Only,1,-89.156,-967.513,789.201,0.841
-Sodium,Plant & Microbes,1,260.210,-541.118,1061.538,0.520
-Sodium,Plant Only,1,294.598,-437.509,1026.706,0.426
-Sodium,Microbes Only,2,-472.820,-1338.491,392.851,0.281
-Sodium,Plant & Microbes,2,-8.274,-543.229,526.682,0.976
-Sodium,Plant Only,2,-55.955,-559.254,447.344,0.826
-Sodium,Microbes Only,3,583.351,-30.980,1197.683,0.062
-Sodium,Plant & Microbes,3,308.288,-116.080,732.656,0.152
-Sodium,Plant Only,3,341.793,-114.068,797.654,0.140
-Sulfate,Microbes Only,1,-529.134,-1284.091,225.822,0.168
+Nitrate,Plant & Microbes,1,-0.246,-0.841,0.349,0.413
+Nitrate,Microbes Only,1,-0.139,-0.684,0.407,0.615
+Nitrate,Plant Only,1,-0.277,-0.867,0.313,0.354
+Nitrate,Plant & Microbes,2,-0.246,-0.841,0.349,0.413
+Nitrate,Microbes Only,2,-0.139,-0.684,0.407,0.615
+Nitrate,Plant Only,2,-0.277,-0.867,0.313,0.354
+Nitrate,Plant & Microbes,3,-0.246,-0.841,0.349,0.413
+Nitrate,Microbes Only,3,-0.139,-0.684,0.407,0.615
+Nitrate,Plant Only,3,-0.277,-0.867,0.313,0.354
+Ammonium,Plant & Microbes,1,0.201,-2.004,2.406,0.855
+Ammonium,Microbes Only,1,-1.092,-3.910,1.727,0.439
+Ammonium,Plant Only,1,-0.399,-2.562,1.764,0.712
+Ammonium,Plant & Microbes,2,0.201,-2.003,2.405,0.855
+Ammonium,Microbes Only,2,-1.092,-3.910,1.727,0.439
+Ammonium,Plant Only,2,-0.399,-2.563,1.765,0.712
+Ammonium,Plant & Microbes,3,0.201,-2.004,2.405,0.855
+Ammonium,Microbes Only,3,-1.092,-3.910,1.727,0.439
+Ammonium,Plant Only,3,-0.399,-2.563,1.764,0.712
+Sodium,Plant & Microbes,1,-178.655,-1181.547,824.236,0.724
+Sodium,Microbes Only,1,-772.673,-1642.566,97.219,0.081
+Sodium,Plant Only,1,70.392,-645.341,786.124,0.845
+Sodium,Plant & Microbes,2,-63.328,-589.335,462.679,0.811
+Sodium,Microbes Only,2,-1007.684,-1856.199,-159.169,0.021
+Sodium,Plant Only,2,-93.016,-580.741,394.709,0.705
+Sodium,Plant & Microbes,3,95.757,-314.538,506.052,0.643
+Sodium,Microbes Only,3,547.818,-47.941,1143.576,0.071
+Sodium,Plant Only,3,141.049,-295.934,578.032,0.522
+Calcium,Plant & Microbes,1,0.209,0.017,0.402,0.034
+Calcium,Microbes Only,1,0.313,0.054,0.572,0.018
+Calcium,Plant Only,1,0.119,-0.068,0.307,0.210
+Calcium,Plant & Microbes,2,0.209,0.017,0.402,0.034
+Calcium,Microbes Only,2,0.313,0.054,0.572,0.018
+Calcium,Plant Only,2,0.119,-0.068,0.307,0.210
+Calcium,Plant & Microbes,3,0.209,0.017,0.402,0.034
+Calcium,Microbes Only,3,0.313,0.054,0.572,0.018
+Calcium,Plant Only,3,0.119,-0.068,0.307,0.210
+Lithium,Plant & Microbes,1,0.165,-0.084,0.414,0.192
+Lithium,Microbes Only,1,-0.226,-0.546,0.095,0.166
+Lithium,Plant Only,1,0.207,-0.023,0.437,0.077
+Lithium,Plant & Microbes,2,0.260,0.026,0.493,0.030
+Lithium,Microbes Only,2,-0.014,-0.336,0.307,0.929
+Lithium,Plant Only,2,0.290,0.064,0.515,0.012
+Lithium,Plant & Microbes,3,0.064,-0.158,0.286,0.568
+Lithium,Microbes Only,3,0.355,0.046,0.665,0.025
+Lithium,Plant Only,3,0.039,-0.199,0.276,0.747
+Magnesium,Plant & Microbes,1,0.863,0.227,1.499,0.008
+Magnesium,Microbes Only,1,0.028,-0.826,0.882,0.948
+Magnesium,Plant Only,1,0.167,-0.421,0.755,0.574
+Magnesium,Plant & Microbes,2,1.497,0.894,2.100,< 0.001
+Magnesium,Microbes Only,2,1.381,0.502,2.259,0.002
+Magnesium,Plant Only,2,0.793,0.210,1.376,0.008
+Magnesium,Plant & Microbes,3,0.888,0.305,1.472,0.003
+Magnesium,Microbes Only,3,1.018,0.163,1.873,0.020
+Magnesium,Plant Only,3,0.432,-0.189,1.052,0.171
+Potassium,Plant & Microbes,1,-0.082,-0.518,0.353,0.708
+Potassium,Microbes Only,1,-1.122,-1.696,-0.548,< 0.001
+Potassium,Plant Only,1,-0.007,-0.410,0.397,0.974
+Potassium,Plant & Microbes,2,-0.028,-0.442,0.386,0.895
+Potassium,Microbes Only,2,-0.457,-1.050,0.135,0.129
+Potassium,Plant Only,2,-0.108,-0.508,0.293,0.595
+Potassium,Plant & Microbes,3,-0.105,-0.505,0.295,0.605
+Potassium,Microbes Only,3,0.564,-0.011,1.138,0.055
+Potassium,Plant Only,3,-0.027,-0.452,0.399,0.902
+Fluoride,Plant & Microbes,1,-0.029,-0.228,0.170,0.774
+Fluoride,Microbes Only,1,-0.124,-0.351,0.103,0.280
+Fluoride,Plant Only,1,-0.109,-0.307,0.088,0.275
+Fluoride,Plant & Microbes,2,-0.029,-0.228,0.170,0.774
+Fluoride,Microbes Only,2,-0.124,-0.351,0.103,0.280
+Fluoride,Plant Only,2,-0.109,-0.307,0.088,0.275
+Fluoride,Plant & Microbes,3,-0.029,-0.228,0.170,0.774
+Fluoride,Microbes Only,3,-0.124,-0.351,0.103,0.280
+Fluoride,Plant Only,3,-0.109,-0.307,0.088,0.275
+Bromide,Plant & Microbes,1,0.038,-0.484,0.561,0.884
+Bromide,Microbes Only,1,-0.033,-0.727,0.662,0.926
+Bromide,Plant Only,1,0.237,-0.261,0.735,0.347
+Bromide,Plant & Microbes,2,0.172,-0.415,0.759,0.562
+Bromide,Microbes Only,2,-0.260,-0.920,0.400,0.437
+Bromide,Plant Only,2,-0.044,-0.614,0.526,0.878
+Bromide,Plant & Microbes,3,-0.298,-0.780,0.185,0.224
+Bromide,Microbes Only,3,-0.077,-0.638,0.484,0.785
+Bromide,Plant Only,3,-0.391,-0.901,0.119,0.132
+Chloride,Plant & Microbes,1,-35.173,-473.829,403.483,0.874
+Chloride,Microbes Only,1,-232.054,-660.630,196.522,0.286
+Chloride,Plant Only,1,-27.672,-455.640,400.297,0.898
+Chloride,Plant & Microbes,2,-44.414,-520.270,431.442,0.854
+Chloride,Microbes Only,2,-240.581,-687.836,206.674,0.289
+Chloride,Plant Only,2,-23.647,-491.325,444.032,0.920
+Chloride,Plant & Microbes,3,-10.062,-425.133,405.009,0.962
+Chloride,Microbes Only,3,222.510,-157.487,602.507,0.248
+Chloride,Plant Only,3,-193.203,-622.174,235.767,0.374
 Sulfate,Plant & Microbes,1,2.870,-662.950,668.689,0.993
+Sulfate,Microbes Only,1,-529.134,-1284.091,225.822,0.168
 Sulfate,Plant Only,1,4.806,-641.526,651.138,0.988
-Sulfate,Microbes Only,2,-724.675,-1437.313,-12.038,0.046
 Sulfate,Plant & Microbes,2,-337.264,-974.266,299.739,0.296
+Sulfate,Microbes Only,2,-724.675,-1437.313,-12.038,0.046
 Sulfate,Plant Only,2,-315.627,-942.060,310.805,0.320
-Sulfate,Microbes Only,3,298.647,-383.469,980.764,0.388
 Sulfate,Plant & Microbes,3,-66.412,-689.660,556.837,0.833
+Sulfate,Microbes Only,3,298.647,-383.469,980.764,0.388
 Sulfate,Plant Only,3,-329.059,-980.239,322.122,0.319
+Phosphate,Plant & Microbes,1,1.780,0.349,3.212,0.015
+Phosphate,Microbes Only,1,1.096,-0.378,2.569,0.143
+Phosphate,Plant Only,1,-0.532,-1.913,0.849,0.446
+Phosphate,Plant & Microbes,2,1.780,0.349,3.212,0.015
+Phosphate,Microbes Only,2,1.096,-0.378,2.569,0.143
+Phosphate,Plant Only,2,-0.532,-1.913,0.849,0.446
+Phosphate,Plant & Microbes,3,1.780,0.349,3.212,0.015
+Phosphate,Microbes Only,3,1.096,-0.378,2.569,0.143
+Phosphate,Plant Only,3,-0.532,-1.913,0.849,0.446
+Nitrogen,Plant & Microbes,1,-0.092,-0.743,0.559,0.780
+Nitrogen,Microbes Only,1,-0.037,-0.631,0.557,0.902
+Nitrogen,Plant Only,1,-0.192,-0.829,0.446,0.553
+Nitrogen,Plant & Microbes,2,-0.092,-0.743,0.559,0.780
+Nitrogen,Microbes Only,2,-0.037,-0.631,0.557,0.902
+Nitrogen,Plant Only,2,-0.192,-0.829,0.446,0.553
+Nitrogen,Plant & Microbes,3,-0.092,-0.743,0.559,0.780
+Nitrogen,Microbes Only,3,-0.037,-0.631,0.557,0.902
+Nitrogen,Plant Only,3,-0.192,-0.829,0.446,0.553

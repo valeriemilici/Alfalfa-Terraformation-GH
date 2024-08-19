@@ -340,6 +340,60 @@ var.test(EC3draws$Y, EC3draws$N)
 ```
 According to F-test the variances are different. 
 
+### Total Cations / IC (another general measure of weathering)
+
+```{r}
+dat2 <- dat %>% mutate(CatIC = mu_charge / (IC/12)) %>%
+  filter(CatIC >= 0 & CatIC != Inf)
+```
+
+
+```{r Total Cation / IC Soil model selection, include=F }
+
+CatICSoil2 <- lmer(CatIC ~ Soil * Level + scale(Dmass_tot) +
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation) + (1|batch_IC),
+                data = dat2)
+```
+
+Microbes at high soil moisture have a higher Cation/IC ratio than the other treatments. This is the only significant relationship (other than accounting for dilution).
+
+```{r echo=F, message=F}
+CatICSoil <- lmer(mu_charge ~ IC + Soil + Level + scale(Dmass_tot) +
+                 (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation) + (1|batch_IC),
+                data = dat)
+```
+
+*check the model diagnostics*
+
+```{r  echo=F, fig.dim= c(6,8)}
+check_model(CatICSoil)
+```
+looks good to me!
+
+```{r echo=F}
+CatICSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
+```
+
+The only thing that affects cation concentration is IC, not treatment 
+
+```{r}
+
+quantile(dat$mu_charge, na.rm = T, 0.975) #148 is the high
+quantile(dat$mu_charge, na.rm = T, 0.025) #0 is the low
+
+library(ggpmisc)
+catICfig <- ggplot(filter(dat, mu_charge <=148), aes(mu_charge, IC/12)) +
+  stat_poly_line() +
+  stat_poly_eq(use_label(c("R2", "eq"))) +
+  geom_point() +
+  xlab("Total Cation Concentration (ppm)") +
+  ylab("IC Concentration (ppm)") +
+  theme_bw()
+
+ggsave(filename = "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/04_Figures/ManuscriptFigs/catICfig.png", plot = catICfig)
+```
+
+
 ## Summary of pH and EC
 
 <a id="summary-one"></a>
@@ -673,6 +727,84 @@ back to [table of contents](#toc)
 
 ## Nitrogen
 
+### Total Nitrogen (measured alongside NPOC)
+
+```{r}
+dat$batch_NPOC <- as.factor(dat$batch_NPOC)
+contrasts(dat$batch_NPOC) <- contr.sum(3)
+```
+
+
+```{r Nitrogen Soil model selection, include=F }
+
+#Step 1:
+NSoil1 <- lmer((TN.ppm) ~ Soil * Level + scale(Dmass_tot) + batch_NPOC +
+                 (1|Geno) + (1|dis_table) + (1|table),
+                data = dat)
+
+NSoil2 <- lmer((TN.ppm) ~ Soil + Level + scale(Dmass_tot) + batch_NPOC +
+                 (1|Geno) + (1|dis_table) + (1|table),
+                data = dat)
+
+compare_performance(NSoil1, NSoil2, rank = T)
+```
+
+
+```{r echo = F}
+dat$Soil <- relevel(factor(dat$Soil), 
+                     ref = "C")
+```
+
+```{r TN Soil Model, message=F}
+NSoil <- lmer(log(TN.ppm) ~ Soil + Level + scale(Dmass_tot) + batch_NPOC +
+                 (1|Geno) + (1|dis_table) + (1|table),
+                data = filter(dat, TN.ppm <= 55 & TN.ppm >= 1.26))
+#remove outlier that is above 0.975 quantile
+```
+
+*Check Model Diagnostics*
+
+```{r TN Diagnostics, echo=FALSE, fig.dim=c(6,8)}
+check_model(NSoil)
+```
+
+
+```{r TN Model Summary, echo=FALSE}
+NSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
+```
+
+There are absolutely no patterns with total discharge N and any of the treatments (for both additive and interactive models)
+
+```{r TN model save, echo = FALSE}
+saveRDS(NSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/NSoil.RDS")
+```
+
+
+```{r TN vs NPOC plot, echo = FALSE}
+NCarbon <- lmer((TN.ppm) ~ NPOC + scale(Dmass_tot) + batch_NPOC + 
+                 (1|Geno) + (1|dis_table) + (1|table),
+                data = filter(dat, TN.ppm <= 55 & TN.ppm >= 1.26))
+```
+
+```{r NCarbon plot, message=F, echo=FALSE}
+NCpreds <- predict_response(NCarbon, terms = "NPOC", type = "fixed")
+
+# Create Plot
+
+NCplot <- ggplot(data = NCpreds, mapping = aes(x, predicted)) +
+   geom_ribbon(mapping = aes(ymin = conf.low, ymax = conf.high), alpha = 0.4) +
+  geom_line() +
+ 
+  xlab("NPOC (ppm)") +
+  ylab("Total Nitrogen (ppm)") +
+  theme_classic(18)
+
+ggsave(NCplot, filename = "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/04_Figures/ManuscriptFigs/NCFig.png",
+       height = 6, width =8, units = "in")
+
+NCplot
+```
+
 ### Nitrate
 
 ```{r Nitrate Soil model selection, include=F }
@@ -862,7 +994,7 @@ Naplot <- ggplot(data = Napreds,
   scale_x_discrete(labels = c("1" = "30-50", "2" = "55-75", "3" = "80-100")) +
   theme_classic(18)
 
-ggsave(Naplot, filename = "figures/NaSoil.png")
+#ggsave(Naplot, filename = "figures/NaSoil.png")
 
 Naplot
 ```
@@ -966,8 +1098,6 @@ Mgplot <- ggplot() +
                               "S" = "Plant \nOnly", "L" = "Plant & \n Microbes")) +
   theme_classic(18)
 
-ggsave(Mgplot, filename = "figures/MgSoil.png",
-       height = 6, width =8, units = "in")
 
 Mgplot
 ```
@@ -990,18 +1120,11 @@ compare_performance(KSoil1, KSoil2, rank = T)
 
 The best model contains all treatments and includes the interaction
 
-```{r echo = F}
-dat$Soil <- relevel(factor(dat$Soil), 
-                     ref = "S")
-```
-
 ```{r Potassium Soil Model, message=F}
 KSoil <- lmer(log(mu_K) ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
                 data = dat)
 ```
-
-
 
 *Check Model Diagnostics*
 
@@ -1020,30 +1143,6 @@ The only difference between treatments is that N seems to have lower potassium t
 
 ```{r echo=FALSE}
 saveRDS(KSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/KSoil.RDS")
-```
-
-
-```{r K plot, message=F, echo=FALSE}
-Kpreds <- ggemmeans(KSoil, terms = c("Soil", "Level" ), type = "fixed")
-
-# Create Plot
-
-Kplot <- ggplot() +
-  geom_pointrange(data = Kpreds,
-                  mapping = aes(x, predicted,
-                                ymin = conf.low, ymax = conf.high),
-                  size = 1.2,
-                  position = position_dodge(width = 0.2)) +
-  facet_wrap(~group,nrow = 3, ncol = 1) + 
-  xlab("Soil Biota Treatment") +
-  ylab("Potassium (mg/L)") +
-  scale_x_discrete(labels = c("C" = "Abiotic \n Control", "N" = "Microbes \nOnly",
-                              "S" = "Plant \nOnly", "L" = "Plant & \n Microbes")) +
-  theme_classic(18)
-
-ggsave(Kplot, filename = "figures/KSoil.png")
-
-Kplot
 ```
 
 ## Lithium
@@ -1083,6 +1182,7 @@ LiSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kab
 ```{r echo=FALSE}
 saveRDS(LiSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/LiSoil.RDS")
 ```
+
 
 <a id="summary-three"></a>
 

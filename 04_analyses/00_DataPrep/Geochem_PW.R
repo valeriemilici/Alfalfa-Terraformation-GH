@@ -11,13 +11,7 @@ library(stringr) #deal with mismatched strings
 # Cation
 
 cation <- read.csv("data/00_PrepData/Cation_Clean_Complete.csv")
-
-#delete this data or move to new folder
-#b1 <- read.csv("data/00_PrepData/MP_Val_Cation_Reruns_Sept_7_2023.csv")
-#b2<- read.csv("data/00_PrepData/MP_Val_Cation_Reruns_Sept_11_2023.csv")
-#b3<- read.csv("data/00_PrepData/MP_Val_Cation_Reruns_Sept_18_2023.csv")
-#b4<- read.csv("data/00_PrepData/MP_Val_Cation_Reruns_Sept_25_2023.csv")
-#b1Cats <- read.csv("data/00_PrepData/Partial_Cation_Clean.csv")
+cat_charge <- read.csv("data/00_PrepData/totalcatconcentration.csv")
 
 # Anion
 
@@ -30,9 +24,14 @@ anion <- read.csv("data/00_PrepData/Anions_Clean_Complete.csv")
 #Carbon
 TC <- read.csv("data/00_PrepData/TC_dat.csv")
 NPOC <- read.csv("data/00_PrepData/NPOC_Dat.csv")
+#Nitrogen
+TN <- read.csv("data/00_PrepData/TN_PW.csv")
 #pH and EC
 EC <- read.csv("data/00_PrepData/2A_discharge_PhEC.csv")
 #Step 1: Cations ---------------------------------------------------------------
+
+# add concentration to other cat data
+cation <- left_join(cation, cat_charge, by = "pot")
 
 #create "rep" column
 cation$rep <- str_extract(cation$pot, '\\d$')
@@ -40,10 +39,11 @@ cation$rep <- str_extract(cation$pot, '\\d$')
 #remove "rep" value from pot code
 cation$pot <- str_sub(cation$pot, end = -3)
 
-#Split data into the reps that have different dilutions
+#split data into two sets of batches
 
-#cat1 <- cation %>% filter(batch_cation <= 4)
-#cat2 <- cation %>% filter(batch_cation > 4)
+cat2<- cation %>% filter(batch_cation >4)
+cation <- cation %>% filter(batch_cation <= 4)
+
 
 #condense reps into one mean value
 CatDat1 <- cation %>% group_by(pot, batch_cation) %>%
@@ -52,18 +52,20 @@ CatDat1 <- cation %>% group_by(pot, batch_cation) %>%
             mu_NH4 = mean(NH4_diluted, na.rm = T)*10,
             mu_K = mean(K_diluted, na.rm = T)*10,
             mu_Mg = mean(Mg_diluted, na.rm = T)*10,
-            mu_Ca = mean(Ca_diluted, na.rm = T)*10)
+            mu_Ca = mean(Ca_diluted, na.rm = T)*10,
+            mu_charge = mean(Cat_Charge, na.rm = T)) #charge pre-adjusted
 
-#CatDat2 <- cat2 %>% group_by(pot, batch_cation) %>%
- # summarise(mu_Li = mean(Li_diluted, na.rm = T)*2.6,
-  #          mu_Na = mean(Na_diluted, na.rm = T)*2.6,
-   #         mu_NH4 = mean(NH4_diluted, na.rm = T)*2.6,
-    #        mu_K = mean(K_diluted, na.rm = T)*2.6,
-     #       mu_Mg = mean(Mg_diluted, na.rm = T)*2.6,
-      #      mu_Ca = mean(Ca_diluted, na.rm = T)*2.6)
+CatDat2 <- cat2 %>% group_by(pot, batch_cation) %>%
+ summarise(mu_Li = mean(Li_diluted, na.rm = T)*10*2.6,
+           mu_Na = mean(Na_diluted, na.rm = T)*10*2.6,
+           mu_NH4 = mean(NH4_diluted, na.rm = T)*10*2.6,
+           mu_K = mean(K_diluted, na.rm = T)*10*2.6,
+           mu_Mg = mean(Mg_diluted, na.rm = T)*10*2.6,
+            mu_Ca = mean(Ca_diluted, na.rm = T)*10*2.6,
+           mu_charge= mean(Cat_Charge, na.rm =T)*2.6)
 
 #object to be used with the final merge
-# Cation <- rbind(CatDat1, CatDat2)
+ Cation <- rbind(CatDat1, CatDat2)
 
 # Step 2: Anions ---------------------------------------------------------------
 # Compute mean anion
@@ -106,14 +108,17 @@ EC <- EC %>%
   dplyr::select(2,4,5) %>%
   rename(EC = EC..us.cm.)
 
+#Step 5: TN --------------------------------------------------------------------
+TN <- TN %>% rename(TN.ppm = TN..ppm.)
 #Step 5: Merge them all together -----------------------------------------------
-PW_1 <- merge(CatDat1, Anion, all = T)
+PW_1 <- merge(Cation, Anion, all = T)
 PW_2 <- merge(PW_1, Carbon, all = T)
 PW_3 <- merge(PW_2, EC, all = T)
+PW_4 <- merge(PW_3, TN, all = T)
 
 #nonsense rows that are empty and the samples don't exist
 outs <- c("L-2-CRI-02", "L-2-CRI-07", "L-3-R25-03", "GH RO SAMPLE", "GH-RO")
 
-PW_3 <- filter(PW_3, !pot %in% outs)
+PW_4 <- filter(PW_4, !pot %in% outs)
 #save
-write.csv(PW_3,"data/01_PrepData/PW_Geochemistry.csv")
+write.csv(PW_4,"data/01_PrepData/PW_Geochemistry.csv")
