@@ -23,8 +23,10 @@ library(knitr) # for pretty markdown tables
 library(ggeffects) # for direct easy model prediction plotting
 library(car) # for bartlett test
 
-dat <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/AllPerformanceGeochem.csv") 
-census <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/FullCensusTimeSeries.csv")
+dat <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/
+                ModData/AllPerformanceGeochem.csv") 
+census <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/
+                   ModData/FullCensusTimeSeries.csv")
 
 #Remove NAs and simplify data to one observation per plant
 BMdat <- dat %>%
@@ -34,7 +36,7 @@ BMdat <- dat %>%
   #Only living plants have data
   filter(status == 1)
 
-outs <- c("212", "SWE", "D16")
+outs <- c("212", "SWE", "D16") #Genos with only < 3 survivors
 
 census <- census %>% filter(!Geno %in% outs)
 
@@ -51,10 +53,6 @@ census <- census %>% filter(!Geno %in% outs)
  [Growth Rate](#item-three)
  
  [Survival](#item-four)
- 
- [Photosynthesis and Transpiration](#item-five)
- 
- [Evapotranspiration](#item-six)
  
  [Plant Performance Summary](#item-seven)
 
@@ -148,49 +146,6 @@ ggsave(BMplot, filename = "figures/Biomass.png",
 BMplot
 
 ```
-
-## Aboveground Biomass
-
-```{r Aboveground Biomass, message = F}
-BMSoilA <- lmer(log(massA) ~ Soil * Level + (1|Geno) + (1|table), 
-                data = BMdat)
-```
-
-*Check the model diagnostics*
-
-```{r BMA diagnostics, echo = F, fig.dim= c(6,8)}
-check_model(BMSoilA)
-```
-
-The model looks good to me. Now time to review the model summary.
-
-```{r BMA Summary, echo = F}
-BMSoilA %>% tidy()%>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
-```
-
-The same pattern as total biomass. We can see that plants in the sterile soil treatment had greater aboveground biomass than plants in the live soil treatment. We also see that moisture affects aboveground biomass. Regardless of soil microbe exposure, plants had greater aboveground biomass when comparing moisture treatments 1 (30-50% WHC) and 2 (55-75% WHC), but additional soil moisture did not further affect plant growth (levels 2 vs 3; 80-100% WHC).
-
-## Belowground Biomass
-
-```{r Belowground Biomass, message = F}
-BMSoilB <- lmer(log(massB) ~ Soil * Level + (1|Geno) + (1|table), 
-                data = filter(BMdat, rootsample == "Y"))
-```
-
-*Check the model diagnostics*
-
-```{r BMB diagnostics, echo = F, fig.dim= c(6,8)}
-check_model(BMSoilB)
-```
-
-The model looks good to me. Now time to review the model summary.
-
-```{r BMB Summary, echo = F}
-BMSoilB %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
-```
-
-We see the exact same pattern in belowground biomass as we saw in aboveground biomass. Plants in sterile soil had larger roots than for plants exposed to microbes. We see improvements in biomass between low and intermediate soil moisture, but that further increases to high soil moisture do not provide additional improvements to plant growth. There is no interaction between soil inoculation and growth response to soil moisture, so both live and sterile plants have the same growth relationship to soil moisture. 
-
 ## Biomass Allocation
 
 ```{r Root Mass Fraction, message = F}
@@ -222,74 +177,6 @@ saveRDS(RMF, file = "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_m
 
 ```
 
-```{r RMF plot, message=FALSE, echo=FALSE}
-
-RMFpreds <- ggemmeans(RMF, "Soil", type = "fixed")
-
-# Create Plot
-
-RMFplot <- ggplot() +
-  geom_pointrange(data = RMFpreds,
-                  mapping = aes(x, predicted,
-                                ymin = conf.low, ymax = conf.high),
-                  size = 1.2,
-                  position = position_dodge(width = 0.2)) +
-  xlab("Soil Microbe Treatment") +
-  ylab("Root Mass Fraction") +
-  scale_x_discrete(labels = c("L" = "Live Soil", "S" = "Sterile Soil")) +
-  theme_classic(18)
-
-ggsave(RMFplot, filename = "figures/RMF.png",
-       height = 6, width =8, units = "in")
-
-RMFplot
-
-```
-
-```{r Shoot Mass Fraction, message = F}
-
-SMF <- lmer(massA/totBM ~ log(totBM) + Soil * Level + (1|Geno) + (1|table), 
-                data = BMdat)
-
-```
-
-
-*Check the model diagnostics*
-
-```{r SMF Diagnostics, echo=F, fig.dim= c(6,8)}
-check_model(SMF)
-```
-
-```{r SMF Summary, echo = F}
-SMF %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
-```
-
-Plants in sterile soil allocate less biomass to their shoots than plants in Live soil. This makes sense because if there is a lower RMF for live plants than sterile plants there must be a higher SMF for live plants than sterile plants. 
-
-```{r SMF plot, message=FALSE, echo=FALSE}
-
-SMFpreds <- ggemmeans(SMF, "Soil" , type = "fixed")
-
-# Create Plot
-
-SMFplot <- ggplot() +
-  geom_pointrange(data = SMFpreds,
-                  mapping = aes(x, predicted,
-                                ymin = conf.low, ymax = conf.high),
-                  size = 1.2,
-                  position = position_dodge(width = 0.2)) +
-  xlab("Soil Microbe Treatment") +
-  ylab("Shoot Mass Fraction") +
-  scale_x_discrete(labels = c("L" = "Live Soil", "S" = "Sterile Soil")) +
-  theme_classic(18)
-
-ggsave(SMFplot, filename = "figures/SMF.png",
-       height = 6, width =8, units = "in")
-
-SMFplot
-
-```
-
 <a id="summary-one"></a>
 
 ## Summary of Patterns in Biomass
@@ -303,27 +190,6 @@ We can see that microbes and soil moisture influenced plant growth. In general, 
 # Relative Growth Rates
 
 Jump to [summary](#summary-two)
-
-## RGR at the beginning of the experiment
-```{r RGR early, message = F}
-RGR1 <- lmer(RGR_d ~ Soil*Level +
-                  HtPrevCensus +
-                  (1|Geno) + (1|table),
-                data = filter(census, CensusNo == 2 & status == 1))
-```
-
-*check the model diagnostics*
-```{r Early RGR diagnostics, echo = F, fig.dim= c(6,8)}
-check_model(RGR1)
-```
-
-```{r RGR1 Summary, echo = F}
-RGR1 %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
-```
-
-Plants in sterile soil grow faster than plants in live soil. There is a slight interaction between microbes and soil moisture here: In the earliest days of the experiment, plants in live soil grew faster as soil moisture increases, but this is not true for plants in sterile soil.  
-
-But we also know that this pattern doesn't hold across the entire experiment...
 
 ## RGR across the entire experiment
 
@@ -410,58 +276,6 @@ census2$status <- ifelse(census2$CensusNo < 6, 0, census2$status)
 ```
 
 
-*note*: I'm using a "cloglog" link to account for census interval in the model, due to the math underlying a cloglog link, I need to model mortality rather than survival, so all of the outputs from the model will be interpreted as probability of mortality. In a hidden block of code I've created a new "status" column where 0 = alive and 1 = dead. 
-
-```{r Mortality Entire, message = F}
-Mort1 <- glmer(Status ~ Soil * Level  + scale(HtPrevCensus) +
-                  (1|pot)+ (1|CensusNo) + (1|Geno) + (1|table),
-                 data = filter(census1, CensusNo != 1 & HtPrevCensus > 0),
-                 family = binomial(link = "cloglog"),
-                 glmerControl(optimizer = "bobyqa",
-                              optCtrl = list(maxfun = 10000)),
-                 offset = scale(log(censusint)))
-```
-
-**To Do:** Model diagnostics... check old code from prior studies.
-
-```{r Mort1 Summary, echo = F}
-Mort1 %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
-```
-
-Throughout the duration of the experiment soil microbes increased a plant's probability of mortality. Increasing soil moisture reduced the probability of mortality, and this was especially true for plants in sterile soil (although the effect is marginal, *p* = 0.08). 
-
-```{r Mort Save, echo=FALSE}
-
-saveRDS(Mort1, file = "04_analyses/02_models/Output/Mortality.RDS")
-
-```
-
-```{r Mort Figure, message=FALSE, echo = FALSE}
-MortPreds <- ggpredict(Mort1, c("Level", "Soil"))
-
-Mortplot <- ggplot() +
-  geom_pointrange(data = MortPreds,
-                  mapping = aes(x, predicted,
-                                ymin = conf.low, ymax = conf.high,
-                                group = group, col = group),
-                  size = 1.2,
-                  position = position_dodge(width = 0.2)) +
-  xlab("Percent of Water Holding Capacity") +
-  ylab("Probability of Mortality") +
-  scale_x_discrete(labels = c("1" = "30-50", "2" = "55-75", "3" = "80-100")) +
-  scale_color_viridis_d("",
-                        labels = c("L" = "Live Soil", "S" = "Sterile Soil"),
-                        begin = 0.2,
-                        end = 0.8) +
-  theme_classic(15)
-
-ggsave(Mortplot, filename = "figures/Mort.png",
-       height = 6, width =8, units = "in")
-
-Mortplot
-
-```
-
 ## Survival to the end of the experiment
 
 Because now we are only looking at one observation for survival (whether or not the plant was alive at the end of the experiment) we are modeling survival, not mortality. 
@@ -521,107 +335,5 @@ Survplot
 When considering survival both across time and the end of the experiment, we see that soil microbes reduced plant survival. This is unsurprising given the fact that soil microbes also reduced growth rate and biomass, and small plants are much more likely to die than large plants. In general we see that plants are more likely to survive when soil moisture is at least 55% of total water holding capacity. 
 
 Interestingly, there is a marginal relationship between microbe and moisture effects on survival rates over time. This suggests that all plants were water stressed in the low moisture treatment, and that plants exposed to soil microbes had a dual stress of water and microbes that could not be overcome by increased water availability. If we go back to the root allocation result, this could be because microbes result in decreased root allocation, so plants are less able to seek water or nutrients via root expansion. Thus, plants in live soil may be less likely to be advantaged by increased soil moisture than plants in sterile soil because of their tiny roots.
-
-[contents](#toc)
-
-<a id="item-five"></a>
-
-## Photosynthesis and Transpiration
-
-Jump to [summary](#summary-four)
-
-### Photosynthesis
-
-```{r PSN Mod, message=FALSE}
-PSN <- lmer(log1p(std_PSN) ~ Soil + Level + (1|Geno) + (1|table),
-                data = BMdat)
-```
-
-*check the model diagnostis*
-
-```{r PSN diagnostics, echo = F, fig.dim= c(6,8)}
-check_model(PSN)
-```
-
-
-```{r PSN summary, echo = F}
-PSN %>% tidy()%>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
-```
-
-*caveat* Although we see significant patterns in the model, the effect sizes are very small given the range of the data (0 - 0.15, mean = 0.015). I'm willing to think that these patterns aren't ecologically meaningful. 
-
-Soil microbes reduced photosynthetic rates. We see a hump-shaped pattern with soil moisture and photosynthesis. Photosynthesis is highest at intermediate soil moisture and similar at low and high soil moisture. 
-
-### Transpiration
-
-```{r TPN Mod, message=FALSE}
-TPN <- lmer(log1p(std_TPN) ~ Soil + Level + (1|Geno) + (1|table),
-                data = BMdat)
-```
-
-*check the model diagnostis*
-
-```{r TPN diagnostics, echo = F, fig.dim= c(6,8)}
-check_model(TPN)
-```
-
-
-```{r TPN summary, echo = F}
-TPN %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
-```
-
-Nothing really going on here. The only pattern with transpiration (marginal, and again the effect size is so slight that I don't think it's biologically meaningful) is that transpiration is a bit lower at high soil moisture compared to the other treatments. 
-
-<a id="summary-four"></a>
-
-### Summary of Photosynthesis and Transpiration
-
-Not much is happening in these models. There are only patterns in photosynthesis and the effect size is so slight that I think it's biologically meaningless. 
-
-[contents](#toc)
-
-<a id="item-six"></a>
-
-## Evapotranspiration
-
-Evapotranspiration is the only "hydrology"-type metric that we can get from this experiment. Our measure of evapotranspiration (ET) comes from the discharge experiment that we performed prior to the harvest of the experiment. 
-
-```{r ET mod data prep, echo = F}
-dat1 <- dat %>% filter(ET <= 25,
-                       ET >= 5 &
-                         Soil != "P")
-```
-
-
-```{r ET mod, message = F}
-ET <- lmer(log(ET) ~ soil_LSB + Level + factor(batch_discharge)
-              + (1|dis_table),
-              data = dat1)
-```
-
-*check the model diagnostics*
-
-```{r ET diagnostics, echo = F, fig.dim= c(6,8) }
-check_model(ET)
-```
-
-
-```{r ET summary, echo = F}
-ET %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
-```
-
-Summary: There are no patterns with ET. There was no difference between planted and bare treatments and ET. This isn't surprising given that the plants were so small. 
-
-[contents](#toc)
-
-<a id="item-seven"></a>
-
-## Summary of Performance Results
-
-Overall, these models tell a consistent story. My preference is to select the total biomass, biomass allocation, survival rate, and RGR entire models for the manuscript figures.
-
-Together they tell us that across the board, soil microbes inhibited plant growth rates, and as a result plants in live soil were smaller and more likely to die than plants in sterile soil. 
-
-The soil microbes either influenced biomass allocation or were attacking/consuming the plant roots, because plants in the live soil had decreased root allocation compared to plants in sterile soil. Fewer roots would have compromized the plant's ability to obtain water and (the very limited) nutrients from the soil. Also, if the microbes were consuming the root tissue, then the plants would have been losing a lot of energy and would be smaller and more likely to die- all contributing to the patterns that we see here. Of course, the microbes may also have been competing with the plants for the very limited nutrients, and we do have some evidence for this. See the geochemistry analysis for that information!
 
 [contents](#toc)

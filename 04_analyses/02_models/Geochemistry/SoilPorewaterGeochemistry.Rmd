@@ -45,8 +45,6 @@ dat <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/AllPerf
  [Cations](#item-five)
  
  [Anions](#item-six)
- 
- [PCA](#item-seven)
 
 <a id="item-one"></a>
 
@@ -54,7 +52,7 @@ dat <- read.csv("~/Desktop/Alfalfa-Terraformation-GH/Task2A/data/ModData/AllPerf
 
 Below are the models and results of pore-water geochemistry data from the July - October 2022 GCR Task 2A experiment. These models explore broad trends in how the microbes that have naturally colonized the Landscape Evolutionary Observatory (LEO) at Biosphere 2, vascular plants (Alfalfa, *Medicago sativa*), and soil moisture variation affect geochemical weathering during early pedogenesis (measured from pore-water/discharge samples).
 
-The pore-water samples were collected at the end of a discharge experiment that allowed us to calculate the mass balance of water in the pots. In this discharge experiment, 150 ml of DI water were added to the pots and the discharge from this final watering event provided the samples used in this analysis. Because the pots had three different baseline soil saturation levels, there is variation in the amount of discharge resulting from each pot. As a result, total discharge "Dmass_tot" is a fixed effect in all models to account for this variation. Throughout the experiment, the pots were watered such that they never produced discharge, so the pore-water/discharge samples used in these analyses represent the only discharge event. More details on the experimental design and discharge experiment are available in the detailed experimental protocol *insert hyperlink to the protocol at a later date *
+The pore-water samples were collected at the end of a discharge experiment that allowed us to calculate the mass balance of water in the pots. In this discharge experiment, 150 ml of DI water were added to the pots and the discharge from this final watering event provided the samples used in this analysis. Because the pots had three different baseline soil saturation levels, there is variation in the amount of discharge resulting from each pot. As a result, total discharge "Dmass_tot" is a fixed effect in all models to account for this variation. Throughout the experiment, the pots were watered such that they never produced discharge, so the pore-water/discharge samples used in these analyses represent the only discharge event. More details on the experimental design and discharge experiment are available in the detailed experimental protocol 
 
 *These models will help us to evaluate the following questions:*
 
@@ -254,7 +252,6 @@ ggsave(ECplot, filename = "figures/ECSoil.png",
 ECplot
 ```
 
-
 ### Test of Variances
 <a id="b-testpH"></a>
 
@@ -404,108 +401,12 @@ Both pH and EC peak at intermediate soil moisture and are similar between low an
 
 <a id="item-three"></a>
 
-## Carbon (TC, IC, OC) 
+## Carbon (IC & OC) 
 
 Jump to [summary](#summary-two) of Carbon models.
 
-### Total Carbon
-
-```{r TC Soil model selection, include=F }
-
-dat$batch_TC <- as.factor(dat$batch_TC)
-contrasts(dat$batch_TC) <- contr.sum(3)
-
-TCSoil1 <- lmer(TC_ppm ~ Soil * Level + scale(Dmass_tot) + as.factor(batch_TC) +
-                 (1|Geno) + (1|dis_table) + (1|table),
-                data = dat)
-
-TCSoil2 <- lmer(TC_ppm ~ Soil + Level + scale(Dmass_tot) + as.factor(batch_TC) +
-                 (1|Geno) + (1|dis_table) + (1|table),
-                data = dat)
-
-compare_performance(TCSoil1, TCSoil2, rank = T)
-
-anova(TCSoil1)
-```
-
-The model that separates the four soil treatments is the best model, and the interaction between soil and level is significant and should remain in the model. 
-
-```{r echo = F}
-dat$Soil <- relevel(factor(dat$Soil), 
-                     ref = "C")
-```
-
-```{r total carbon, message = F}
-TCSoil <- lmer(TC_ppm ~ Soil * Level + scale(Dmass_tot) + as.factor(batch_TC) +
-                 (1|Geno) + (1|table) + (1|dis_table),
-                  data = dat)
-```
-
-*check the model diagnostics*
-
-```{r TC Soil diagnostics, echo=F, fig.dim= c(6,8)}
-check_model(TCSoil)
-```
-looks good to me!
-
-```{r TC Soil summary table, echo=F}
-TCSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
-```
-Plants in sterile soil have lower total carbon in the pore-water than plants in live soil. Live soil is not different from any other treatment (I think it's the similar to EC and pH, the variance is very large for C and N pots, so the distributions overlap too much to be significant). In general all treatments have decreased TC at high soil moisture with the exception of "N" (no plant, microbe) treatment, which sees increases in TC. This seems odd. Any thoughts?
-
-```{r TC plot, message=F, warning=FALSE, echo=FALSE}
-TCpreds <- ggemmeans(TCSoil, terms = c("Soil", "Level"), type = "fixed")
-
-TCpreds$x <- factor(TCpreds$x, c("C", "N", "S", "L"))
-
-# Create Plot
-
-TCplot <- ggplot(data = TCpreds,
-                  mapping = aes(group, predicted,
-                                group = x, color = x)) +
-  geom_point(size = 1.2) +
-  geom_line() +
-  xlab("Percent of Water Holding Capacity") +
-  ylab("Total Carbon (ppm)") +
-  scale_x_discrete(labels = c("1" = "30-50", "2" = "55-75", "3" = "80-100")) +
-  theme_classic(18)
-
-ggsave(TCplot, filename = "figures/TCSoil.png")
-
-TCplot
-```
-
-### Effects of biomass on total carbon
-
-*Note*: only L and S treatments have biomass, so this is a model to compare L and S only.
-
-```{r total carbon and biomass, message = F}
-
-TCSoil2 <- lmer(TC_ppm ~ Soil + scale(BMrat) + Level + 
-                  scale(Dmass_tot) + as.factor(batch_TC) +
-                 (1|Geno) + (1|table) + (1|dis_table),
-                  data = dat)
-
-```
-
-Root to shoot ratio is better than total biomass in the model.
-
-```{r TC Soil biomass diagnostics, echo=F, fig.dim= c(6,8)}
-check_model(TCSoil2)
-```
-looks good to me!
-
-```{r TC Soil biomass summary table, echo=F}
-TCSoil2 %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kable(digits = 5)
-```
-Sterile and live soil plants no longer have total carbon values that are distinct from one another. Instead, with each SD increase in biomass ratio (roots are getting longer) the total carbon in the soil is decreasing. So... carbon inputs to the soil are driven by increased aboveground biomass allocation. 
-
-Although we no longer see that there is a difference in live vs. sterile plants. They did differ in their biomass allocation, where sterile plants had greater shoot allocation relative to root allocation than did live soil plants. I do need more context here, because there are at least two reasons why the soil treatment could result in different allocation patterns (1) the plant is healthy and allocating differently and (2) the roots are being attacked by microbes so there is less root relative to shoot in live soil plants. I wouldn't expect this to result in higher total carbon. Maybe I should correct for biomass ratio so that it's allocation given a certain biomass. But that's a lot of fraction going on at once.
-
 ### Inorganic Carbon
 ```{r IC Soil model selection, include=F }
-
-
 ICSoil1 <- lmer(IC ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_IC),
                 data = dat)
@@ -550,67 +451,6 @@ The S and N treatments have lower IC than the treatment with microbes and plants
 saveRDS(ICSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/ICSoil.RDS")
 ```
 
-```{r IC plot2, message=F, echo=FALSE}
-ICpreds <- ggemmeans(ICSoil, terms = "Soil", type = "fixed")
-
-ICpreds$x <- factor(ICpreds$x, c("C", "N", "S", "L"))
-
-# Create Plot
-
-ICplot <- ggplot() +
-  geom_pointrange(data = ICpreds,
-                  mapping = aes(x, predicted,
-                                ymin = conf.low, ymax = conf.high),
-                  size = 1.2,
-                  position = position_dodge(width = 0.2)) +
-  xlab("Soil Biota Treatment") +
-  ylab("Inorganic Carbon (ppm)") +
-  scale_x_discrete(labels = c("C" = "Abiotic \n Control", "N" = "Microbes \nOnly",
-                              "S" = "Plant \nOnly", "L" = "Plant & \n Microbes")) +
-  theme_classic(18)
-
-ggsave(ICplot, filename = "figures/ICSoil.png",
-       height = 6, width =8, units = "in")
-
-ICplot
-```
-
-
-```{r Simulate data from IC model, echo= F, message=F, include=F}
-# Step 1: Generate Predicted Data (remove effect of Level) 
-pred.funIC <- function(mod) {
-  model.matrix(~Soil,
-               data = expand.grid(Soil =c("S","C", "L", "N"))) %*%
-    fixef(mod)[c(1:4)]
-}
-
-#Create cluster within computer to bootstrap in parallel
-cl <- makeCluster(detectCores()) 
-clusterEvalQ(cl, library(lme4))
-
-#create data frame of model predictions for EC and pH in each soil treatment
-ICsims <- bootMer(ICSoil, FUN = pred.funIC,
-                nsim = 1000, parallel = "snow", ncpus = detectCores(),cl = cl)
-
-stopCluster(cl = cl)
-
-#Prepare Data for Bartlett Test
-ICdraws <- data.frame(ICsims$t)
-
-Soil <- c("S", "C", "L", "N")
-
-names(ICdraws) <- Soil
-```
-
-```{r plot the density of the IC sims, echo = F}
-ICdraws2 <- pivot_longer(ICdraws, cols = S:N)
-
-densityPlot(ICdraws2$value ~ as.factor(ICdraws2$name),
-            legend = list(title = "Soil Treatment"),
-            xlab = "Model Estimates of IC")
-```
-A different way to visualize the model output. This is from the perspective of the average effect of soil moisture (intercept moisture only). The C and L treatments both have soil microbes in common, and they have equal increases in IC relative to the non-microbial treatments. This makes me think that the change in IC is dominated by activity of microbes. However, we see that the  distribution of simulated data for L (microbes and plants) is much tighter, repeating the pattern that we've seen for EC and pH, so it seems that plants don't add to the effect of biota, but they help to regulate the effect of biota. 
-
 ### Effects of biomass on inorganic carbon 
 
 *Note*: only L and S treatments have biomass, so this is a model to compare L and S only.
@@ -625,7 +465,6 @@ ICSoil2 <- lmer(IC ~ Soil + Level + scale(Dmass_tot) + scale(totBM) +
 ```
 
 ```{r IC biomass diagnostics, echo=F}
-
 check_model(ICSoil2)
 ```
 
@@ -669,7 +508,6 @@ OCSoil <- lmer(log(NPOC) ~ Soil + Level + scale(Dmass_tot) + batch_NPOC +
 *Check the model diagnostics*
 
 ```{r OC diagnostics, echo=F}
-
 check_model(OCSoil)
 ```
 
@@ -689,7 +527,6 @@ saveRDS(OCSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_model
 I evaluated model performance, and there should be no interaction between soil and level, we should use total biomass.
 
 ```{r OC biomass, message = F}
-
 dat$batch_NPOC <- as.factor(dat$batch_NPOC)
 contrasts(dat$batch_NPOC) <- contr.sum(3)
 
@@ -699,7 +536,6 @@ OCSoil2 <- lmer(log(NPOC) ~ Soil + Level + scale(Dmass_tot) + scale(totBM) + bat
 ```
 
 ```{r OC biomass diagnostics, echo=F}
-
 check_model(OCSoil2)
 ```
 
@@ -727,7 +563,7 @@ back to [table of contents](#toc)
 
 ## Nitrogen
 
-### Total Nitrogen (measured alongside NPOC)
+### Total Nitrogen 
 
 ```{r}
 dat$batch_NPOC <- as.factor(dat$batch_NPOC)
@@ -736,8 +572,6 @@ contrasts(dat$batch_NPOC) <- contr.sum(3)
 
 
 ```{r Nitrogen Soil model selection, include=F }
-
-#Step 1:
 NSoil1 <- lmer((TN.ppm) ~ Soil * Level + scale(Dmass_tot) + batch_NPOC +
                  (1|Geno) + (1|dis_table) + (1|table),
                 data = dat)
@@ -779,7 +613,7 @@ There are absolutely no patterns with total discharge N and any of the treatment
 saveRDS(NSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/NSoil.RDS")
 ```
 
-
+Plot N and OC against each other per Katerina's request
 ```{r TN vs NPOC plot, echo = FALSE}
 NCarbon <- lmer((TN.ppm) ~ NPOC + scale(Dmass_tot) + batch_NPOC + 
                  (1|Geno) + (1|dis_table) + (1|table),
@@ -798,18 +632,11 @@ NCplot <- ggplot(data = NCpreds, mapping = aes(x, predicted)) +
   xlab("NPOC (ppm)") +
   ylab("Total Nitrogen (ppm)") +
   theme_classic(18)
-
-ggsave(NCplot, filename = "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/04_Figures/ManuscriptFigs/NCFig.png",
-       height = 6, width =8, units = "in")
-
-NCplot
 ```
 
 ### Nitrate
 
 ```{r Nitrate Soil model selection, include=F }
-
-#Step 1:
 NO3Soil1 <- lmer((mu_NO3) ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = dat)
@@ -849,35 +676,6 @@ There is absolutely nothing going on here. Neither soil treatment nor soil moist
 ```{r echo=FALSE}
 saveRDS(NO3Soil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/NO3Soil.RDS")
 ```
-
-
-
-```{r Nitrate plot, message=F, echo=FALSE}
-NO3preds <- ggemmeans(NO3Soil, terms = "Soil", type = "fixed")
-
-NO3preds$x <- factor(NO3preds$x, c("C", "N", "S", "L"))
-
-# Create Plot
-
-NO3plot <- ggplot() +
-  geom_pointrange(data = NO3preds,
-                  mapping = aes(x, predicted,
-                                ymin = conf.low, ymax = conf.high),
-                  size = 1.2,
-                  position = position_dodge(width = 0.2)) +
-  xlab("Soil Biota Treatment") +
-  ylab("Nitrate (mg/L)") +
-  scale_x_discrete(labels = c("C" = "Abiotic \n Control", "N" = "Microbes \nOnly",
-                              "S" = "Plant \nOnly", "L" = "Plant & \n Microbes")) +
-  theme_classic(18)
-
-ggsave(NO3plot, filename = "figures/NO3Soil.png",
-       height = 6, width =8, units = "in")
-
-NO3plot
-```
-
-
 
 ### Nitrite
 
@@ -952,6 +750,7 @@ The best model includes all soil treatments and an interaction between soil and 
 NaSoil <- lmer((mu_Na) ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
                 data = filter(dat, mu_Na < 2000))
+#remove outlier readings ( > 2000 ppm)
 ```
 
 *Check Model Diagnostics*
@@ -969,34 +768,6 @@ Nothing really happening here except for a relationship between sodium and soil 
 
 ```{r echo=FALSE}
 saveRDS(NaSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/NaSoil.RDS")
-```
-
-```{r Na plot, message=F, echo=FALSE}
-Napreds <- ggemmeans(NaSoil, terms = c("Soil", "Level"), type = "fixed")
-
-Napreds$x <- factor(Napreds$x, c("C", "N", "S", "L"))
-
-t <- data.frame(cbind(group = c("1", "2", "3"), Level = c("Low Moisture", "Medium Moisture", "High Moisture")))
-
-t$Level <- factor(t$Level, levels = c("Low Moisture", "Medium Moisture", "High Moisture"))
-
-Napreds <- left_join(Napreds, t, by = "group")
-
-# Create Plot
-
-Naplot <- ggplot(data = Napreds,
-                  mapping = aes(group, predicted,
-                                group = x, color = x)) +
-  geom_point(size = 1.2) +
-  geom_line() +
-  xlab("Percent of Water Holding Capacity") +
-  ylab("Sodium (mg/L)") +
-  scale_x_discrete(labels = c("1" = "30-50", "2" = "55-75", "3" = "80-100")) +
-  theme_classic(18)
-
-#ggsave(Naplot, filename = "figures/NaSoil.png")
-
-Naplot
 ```
 
 ### Calcium
@@ -1079,34 +850,9 @@ Moisture has no effect on porewater magnesium, however there seems to be an inte
 saveRDS(MgSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/MgSoil.RDS")
 ```
 
-```{r MG plot, message=F, echo=FALSE}
-Mgpreds <- ggemmeans(MgSoil, terms = "Soil", type = "fixed")
-
-Mgpreds$x <- factor(Mgpreds$x, c("C", "N", "S", "L"))
-
-# Create Plot
-
-Mgplot <- ggplot() +
-  geom_pointrange(data = Mgpreds,
-                  mapping = aes(x, predicted,
-                                ymin = conf.low, ymax = conf.high),
-                  size = 1.2,
-                  position = position_dodge(width = 0.2)) +
-  xlab("Soil Biota Treatment") +
-  ylab("Magnesium (mg/L)") +
-  scale_x_discrete(labels = c("C" = "Abiotic \n Control", "N" = "Microbes \nOnly",
-                              "S" = "Plant \nOnly", "L" = "Plant & \n Microbes")) +
-  theme_classic(18)
-
-
-Mgplot
-```
-
 ### Potassium
 
 ```{r Potassium Soil model selection, warning = F, message = F, include=F }
-
-#Step 1: Which format of treatment is best?
 KSoil1 <- lmer(log(mu_K) ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
                 data = dat)
@@ -1163,6 +909,7 @@ LiSoil2 <- lmer(mu_Li ~ Soil + Level + scale(Dmass_tot) +
 
 compare_performance(LiSoil1, LiSoil2, rank = T)
 ```
+
 ```{r Li model, message=FALSE}
 LiSoil <- lmer(mu_Li ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_cation),
@@ -1182,7 +929,6 @@ LiSoil %>% tidy() %>% filter(!is.na(p.value)) %>% dplyr::select(-c(1:2)) %>% kab
 ```{r echo=FALSE}
 saveRDS(LiSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/LiSoil.RDS")
 ```
-
 
 <a id="summary-three"></a>
 
@@ -1205,8 +951,6 @@ Jump to [summary](#summary-four) of anions.
 ### Fluoride
 
 ```{r Fluoride Soil model selection, warning = F, message = F, include=F }
-
-#Step 1: Which format of treatment is best?
 FSoil1 <- lmer(log(mu_F) ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_F <= quantile(mu_F, na.rm = T, 0.85)))
@@ -1242,35 +986,9 @@ Fluoride is responsive to soil moisture only. It is stable from low to medium so
 saveRDS(FSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/FSoil.RDS")
 ```
 
-```{r F plot, message=F, echo=FALSE}
-Fpreds <- ggemmeans(FSoil, terms = c("Level" ), type = "fixed")
-
-# Create Plot
-
-Fplot <- ggplot() +
-  geom_pointrange(data = (Fpreds),
-                  mapping = aes(x, predicted,
-                                ymin = conf.low, ymax = conf.high),
-                  size = 1.2,
-                  position = position_dodge(width = 0.2)) +
-  xlab("Percent of Water Holding Capacity") +
-  ylab("Fluoride (mg/L)") +
-  scale_x_discrete(labels = c("1" = "30-50", "2" = "55-75",
-                              "3" = "80-100")) +
-  theme_classic(18)
-
-ggsave(Fplot, filename = "figures/FSoil.png",
-       height = 6, width =8, units = "in")
-
-Fplot
-```
-
-
 ### Bromide
 
 ```{r Br Soil model selection, warning = F, message = F, include=F }
-
-#Step 1: Which format of treatment is best?
 BrSoil1 <- lmer(mu_Br ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_Br <= quantile(mu_Br, na.rm = T, 0.9)))
@@ -1311,8 +1029,6 @@ saveRDS(BrSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_model
 ### Chloride
 
 ```{r Cl Soil model selection, warning = F, message = F, include=F }
-
-#Step 1: Which format of treatment is best?
 ClSoil1 <- lmer(mu_Cl ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_Cl <= quantile(mu_Cl, na.rm = T, 0.95)))
@@ -1348,10 +1064,6 @@ saveRDS(ClSoil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_model
 ### Phosphate
 
 ```{r PO4 Soil model selection, warning = F, message = F, include=F }
-
-densityPlot(dat$mu_PO4) #assess the distribution of the data and how to filter
-
-#Step 1: Which format of treatment is best?
 PO4Soil1 <- lmer(mu_PO4 ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_PO4 <= 25))
@@ -1362,8 +1074,6 @@ PO4Soil2 <- lmer(mu_PO4 ~ Soil + Level + scale(Dmass_tot) +
 
 compare_performance(PO4Soil1, PO4Soil2, rank = T)
 ```
-
-
 
 ```{r echo = F}
 dat$Soil <- relevel(factor(dat$Soil), 
@@ -1393,40 +1103,9 @@ The microbe only treatment, N, has the highest phosphate levels, and phosphate o
 saveRDS(PO4Soil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/PO4Soil.RDS")
 ```
 
-```{r PO4 plot, message=F, echo=FALSE}
-PO4preds <- ggemmeans(PO4Soil, terms = "Soil", type = "fixed")
-
-PO4preds$x <- factor(PO4preds$x, c("C", "N", "S", "L"))
-
-# Create Plot
-
-PO4plot <- ggplot() +
-  geom_pointrange(data = PO4preds,
-                  mapping = aes(x, predicted,
-                                ymin = conf.low, ymax = conf.high),
-                  size = 1.2,
-                  position = position_dodge(width = 0.2)) +
-  xlab("Soil Biota Treatment") +
-  ylab("Phosphate (mg/L)") +
-  scale_x_discrete(labels = c("C" = "Abiotic \n Control", "N" = "Microbes \nOnly",
-                              "S" = "Plant \nOnly", "L" = "Plant & \n Microbes")) +
-  theme_classic(18)
-
-ggsave(PO4plot, filename = "figures/PO4Soil.png",
-       height = 6, width =8, units = "in")
-
-PO4plot
-```
-
-
-
 ### Sulfate
 
 ```{r SO4 Soil model selection, warning = F, message = F, include=F }
-
-densityPlot(dat$mu_SO4) #assess the distribution of the data and how to filter
-
-#Step 1: Which format of treatment is best?
 SO4Soil1 <- lmer(mu_SO4 ~ Soil * Level + scale(Dmass_tot) +
                  (1|Geno) + (1|dis_table) + (1|table) + (1|batch_anion),
                 data = filter(dat, mu_SO4 <= 4000))
@@ -1464,29 +1143,6 @@ Only soil moisture affects sulfate concentrations. Concentrations increase betwe
 saveRDS(SO4Soil, "~/Desktop/Alfalfa-Terraformation-GH/Task2A/04_analyses/02_models/Output/SO4Soil.RDS")
 ```
 
-```{r SO4 plot, message=F, echo=FALSE}
-SO4preds <- ggemmeans(SO4Soil, terms = "Level", type = "fixed")
-
-# Create Plot
-
-SO4plot <- ggplot() +
-  geom_pointrange(data = SO4preds,
-                  mapping = aes(x, predicted,
-                                ymin = conf.low, ymax = conf.high),
-                  size = 1.2,
-                  position = position_dodge(width = 0.2)) +
-  xlab("Percent of Water Holding Capacity") +
-  ylab("Sulfate (mg/L)") +
-  scale_x_discrete(labels = c("1" = "30-50", "2" = "55-75",
-                              "3" = "80-100")) +
-  theme_classic(18)
-
-ggsave(SO4plot, filename = "figures/SO4Soil.png",
-       height = 6, width =8, units = "in")
-
-SO4plot
-```
-
 <a id="summary-four"></a>
 
 ### Summary of Anions 
@@ -1496,50 +1152,5 @@ This was a tough set of models. Very little is happening in the anions.
 Anions are sensitive to soil moisture and peak at intermediate soil moisture and they are insensitive to biota. This is true for Fluoride, Chloride, and Sulfate. Nothing happens with Bromide. 
 
 Models with Phosphate suggest that treatments containing biota have lower phosphate than the abiotic treatment. 
-
-[Table of Contents](#toc)
-
-<a id="item-seven"></a>
-
-## PCA
-
-```{r Prep the PCA data, echo=FALSE, include=FALSE}
-
-#fix this step here, SO4 is selected out
-dat1 <- dat %>% dplyr::select(1,9,11,22:27,29:36, 38, 40, 42,43) 
-
-colSums(is.na(dat1))
-#remove NO2, PO4, NH4
-
-dat2 <- dat1 %>% dplyr::select(!c(mu_NO2, mu_PO4, mu_NH4)) %>%
-  filter(!is.na(mu_F), !is.na(mu_Cl), !is.na(mu_SO4),
-         !is.na(pH), !is.na(EC), !is.na(mu_Na), !is.na(mu_K),
-         !is.na(mu_Mg), !is.na(mu_Ca), !is.na(TC_ppm), !is.na(IC), !is.na(mu_Br)
-         )
-
-colSums(is.na(dat2)) 
-
-dat3 <- dat2 %>% dplyr::select(!c(pot, Soil, Level)) #now only numbers for PCA
-
-#with this level of keeping variables/filtering we can build a PCA from 85 observations
-```
-
-```{r make PCA and describe dimensions, echo=FALSE, include=FALSE}
-pwGeo_pca <- PCA(dat3)
-```
-
-```{r plot PCA}
-pWGeochem <- fviz_pca_biplot(pwGeo_pca, 
-                col.ind = as.factor(dat2$Level), palette = "jco", 
-                addEllipses = T, ellipse.level = 0.95, label = "var", repel = TRUE,
-                legend.title = "Soil Moisture Treatment") +
-  theme_classic(12)
-
-pWGeochem
-```
-
-So... not much going on here. There's no separation of the different soil treatments based on the 11 porewater geochemistry variables that I included. I wonder what this would look like if the plants had been larger! The PCA includes 11 variables shared between 115 observations (out of a maximum of 245). 
-
-Previously it was 85/97, so number of samples analyzed has improved with improved geochemistry
 
 [Table of Contents](#toc)

@@ -125,31 +125,6 @@ Jump to [summary](#summary-one) of models
 
 ### Total Carbon 
 
-```{r TC model selection, include=F }
-TC1 <- lmer(TC_s ~ Soil * Level  +
-                 (1|Geno)  + (1|table) + (1|batch_STC),
-                data = dat)
-
-TC3 <- lmer(TC_s ~ plant_YN * Level  +
-                 (1|Geno) + (1|table) + (1|batch_STC),
-                data = dat)
-TC4 <- lmer(TC_s ~ Soil + Level  +
-                 (1|Geno) + (1|table) + (1|batch_STC),
-                data = dat)
-
-TC6 <- lmer(TC_s ~ plant_YN + Level  +
-                 (1|Geno)  + (1|table) + (1|batch_STC),
-                data = dat)
-
-compare_performance(TC1, TC3, TC4, TC6, rank = T)
-
-```
-
-```{r}
-dat$Soil <- relevel(factor(dat$Soil),
-                       ref = "N")
-```
-
 ```{r TC model, message = F}
 TC <- lmer(TC_s ~ Soil + Level  +
                  (1|Geno) + (1|table) + (1|batch_STC),
@@ -170,36 +145,10 @@ Total carbon peaks at intermediate soil moisture, and the addition of microbes (
 
 ### Total Inorganic Carbon
 
-```{r IC model selection, include=F }
-IC1 <- lmer(IC_s ~ Soil * Level  +
-                 (1|Geno)  + (1|table) + (1|batch_SIC),
-                data = dat)
-
-IC3 <- lmer(IC_s ~ plant_YN * Level +
-                 (1|Geno) + (1|table) + (1|batch_SIC),
-                data = dat)
-IC4 <- lmer(IC_s ~ Soil + Level  +
-                 (1|Geno) + (1|table) + (1|batch_SIC),
-                data = dat)
-
-
-IC6 <- lmer(IC_s ~ plant_YN + Level  +
-                 (1|Geno)  + (1|table) + (1|batch_SIC),
-                data = dat)
-
-compare_performance(IC1,  IC3, IC4, IC6, rank = T)
-
-```
-
-```{r}
-dat$Soil <- relevel(factor(dat$Soil),
-                       ref = "N")
-```
-
 ```{r IC model, message = F}
-IC <- lmer(log1p(IC_s) ~ Soil * Level  +
+IC <- lmer(log1p(IC_s) ~ Soil + Level  +
                  (1|Geno)  + (1|table) + (1|batch_SIC),
-                data = filter(dat, IC_s < 0.08))
+                data = filter(dat, IC_s < 0.24))
 ```
 
 *Check the model diagnostics*
@@ -208,39 +157,26 @@ IC <- lmer(log1p(IC_s) ~ Soil * Level  +
 check_model(IC)
 ```
 
+This model is consistently ugly, but it's ugly because the majority of the data points are zero. 
+
+```{r}
+dat1 <- dat %>% filter(Soil != "P" &
+                 IC_s <= 0.24) %>% group_by(Soil) %>% summarise(quantile(IC_s, na.rm = T))
+```
+
+as you can see, there is essentially no variation between the different soil treatments and IC. The model output that says there is no relationship seems trustworthy.
+
 ```{r IC summary table, echo=F}
 IC %>% tidy() %>% kable()
 ```
 
-I can't get this model to fit the data ok. I won't interpret it until it fits ok.
-
 ### Total Organic Carbon
 
-```{r OC model selection, include=F }
-OC1 <- lmer(TOC_s ~ Soil * Level +
-                 (1|Geno)  + (1|table) + (1|batch_STOC),
-                data = dat)
-
-OC3 <- lmer(TOC_s ~ plant_YN * Level  +
-                 (1|Geno) + (1|table) + (1|batch_STOC),
-                data = dat)
-OC4 <- lmer(TOC_s ~ Soil + Level +
-                 (1|Geno) + (1|table) + (1|batch_STOC),
-                data = dat)
-
-OC6 <- lmer(TOC_s ~ plant_YN + Level  +
-                 (1|Geno)  + (1|table) + (1|batch_STOC),
-                data = dat)
-
-compare_performance(OC1, OC3, OC4, OC6, rank = T)
-
-```
-
-
 ```{r OC model, message = F}
-OC <- lmer(TOC_s ~ plant_YN + Level +
+OC <- lmer(TOC_s ~ Soil + Level +
                  (1|Geno)  + (1|table) + (1|batch_STOC),
-                data = filter(dat, TOC_s < 0.6))
+                data = filter(dat, TOC_s < 0.48))
+# 0.48 is the 97.5% quantile- values above this are outliers
 ```
 
 *Check the model diagnostics*

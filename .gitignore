@@ -54,9 +54,16 @@ data/
 01_design/
 02_calibration/
 03_preliminaryanalyses/
+docs/
+outtakes/
+00_DataPrep/
+03_Bootstrap/
+FRESfig.R
+PoreWaterIC_Preliminary.R
 *.boot
 *.html
 *.pdf
 *.jpg
 *.RDS
 *.png
+

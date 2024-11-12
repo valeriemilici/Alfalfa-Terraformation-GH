@@ -142,21 +142,16 @@ mod5 <- readRDS("04_analyses/02_models/Output/BiomassGS.RDS")
 genoin1 <- c("CRI-CRI", "G15-G15", "K19-K19", "MOC-MOC", "TAS-TAS", "VIR-VIR",
             "YON-YON")
 m5preds <- data.frame(test_predictions(mod5, c("Geno", "Soil"))) %>%
-  filter(Geno %in% genoin)
+  filter(Geno %in% genoin1)
 
 Fig3 <- ggplot(m5preds, aes(Geno, (-1* Contrast/10))) +
   geom_pointrange(mapping = aes(ymin = (-1* conf.low/10), ymax = (-1* conf.high/10))) + 
   labs(x = "Genotype",
-       y = "Microbe Effect on Biomass") +
-  scale_x_discrete(labels = c("CRI-CRI" = "1",
-                              "G15-G15" = "2",
-                              "K19-K19" = "3",
-                              "MOC-MOC" = "4",
-                              "TAS-TAS" = "5",
-                              "VIR-VIR" = "6",
-                              "YON-YON" = "7")) +
+       y = "Microbe Effect on \nBiomass (g)") +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
-  theme_classic(12) 
+  theme_classic(12) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
 
 Fig3
 
@@ -473,13 +468,14 @@ mod22 <- readRDS("04_analyses/02_models/Output/ICGeno.RDS")
 
 genoin <- c("CRI-CRI", "G15-G15", "K19-K19", "MOC-MOC", "TAS-TAS", "VIR-VIR",
             "YON-YON")
+
 m22preds <- data.frame(test_predictions(mod22, c("Geno", "Soil"))) %>%
   filter(Geno %in% genoin)
 
 Fig7 <- ggplot(m22preds, aes(Geno, Contrast)) +
   geom_pointrange(mapping = aes(ymin = conf.low, ymax = conf.high)) + 
   labs(x = "Genotype",
-       y = "Microbe Effect on \nInorganic Carbon (ppm)") +
+       y = "Microbe Effect on \nDIC (ppm)") +
   scale_x_discrete(labels = c("CRI-CRI" = "1",
                               "G15-G15" = "2",
                               "K19-K19" = "3",
@@ -493,6 +489,16 @@ Fig7 <- ggplot(m22preds, aes(Geno, Contrast)) +
 Fig7
 ggsave(plot = Fig7, filename = "04_analyses/04_Figures/ManuscriptFigs/Figure7.png",
        height = 4, width = 6, units = "in")
+
+### Composite GS fig (blend of fig 3 and fig 7) --------------------------------
+
+Fig8 <- Fig3 / Fig7 + plot_layout(axis_titles = "collect")
+
+Fig8
+
+ggsave(plot = Fig8,
+       filename = "04_analyses/04_Figures/ManuscriptFigs/Figure9.png",
+       height = 6, width = 6, units = "in")
 
 ### Figure NA (GS water effects) ----------------------------------------
 
