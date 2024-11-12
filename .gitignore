@@ -60,6 +60,7 @@ outtakes/
 03_Bootstrap/
 FRESfig.R
 PoreWaterIC_Preliminary.R
+01_DataPrep.R
 *.boot
 *.html
 *.pdf

@@ -459,9 +459,6 @@ Figure6 <- panel6A + panel6B + panel6C +
 ggsave(plot = Figure6, filename = "04_analyses/04_Figures/ManuscriptFigs/Figure6.png",
        width = 10, height = 3, units = "in")
 
-### Figure NA (Solutes responsive to moisture only) ------------------------------
-
-#Note- there is no solute that is responsive to soil moisture alone
 
 ### Figure 7 (GS microbe effects on IC) ----------------------------------------
 mod22 <- readRDS("04_analyses/02_models/Output/ICGeno.RDS")
@@ -499,10 +496,6 @@ Fig8
 ggsave(plot = Fig8,
        filename = "04_analyses/04_Figures/ManuscriptFigs/Figure9.png",
        height = 6, width = 6, units = "in")
-
-### Figure NA (GS water effects) ----------------------------------------
-
-#all of these are terrible and don't add to storytelling
 
 ### Supplemental Table 1 ------------------------
 
