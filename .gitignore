@@ -56,8 +56,8 @@ data/
 03_preliminaryanalyses/
 docs/
 outtakes/
-00_DataPrep/
-03_Bootstrap/
+04_analyses/00_DataPrep/
+04_analyses/03_Bootstrap/
 FRESfig.R
 PoreWaterIC_Preliminary.R
 01_DataPrep.R
